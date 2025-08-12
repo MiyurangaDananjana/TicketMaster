@@ -1,0 +1,182 @@
+﻿@model TicketMaster.Models.DTOs.InvitationDTO
+@{
+    ViewData["Title"] = "Select Invitation";
+}
+
+<div class="invitation-container">
+    <div class="header-section">
+        <h2 class="page-title">Select Invitation Type</h2>
+        <p class="page-subtitle">Choose your preferred invitation design and fill in the details</p>
+    </div>
+
+    @if (ViewBag.SuccessMessage != null)
+    {
+        <div class="alert alert-success" role="alert">
+            @ViewBag.SuccessMessage
+        </div>
+    }
+
+    @if (ViewBag.ErrorMessage != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @ViewBag.ErrorMessage
+        </div>
+    }
+
+    <form asp-action="Index" method="post" class="invitation-form">
+        <!-- Image Selection Section -->
+        <div class="form-section">
+            <h4 class="section-title">Choose Design Template</h4>
+            <div class="image-selection">
+
+                @if (Model.Images.Count != 0)
+                {
+                    @foreach (var img in Model.Images)
+                    {
+                        <label class="image-option">
+                            <input type="radio" name="InvitationType" value="@img.Value" hidden />
+                            <div class="image-wrapper">
+                                <img src="@img.Path" class="selectable-img" alt="Invitation Template" />
+
+                                <span style="margin: 8px; text-align: center; font-weight: 500; font-size: 0.9rem; color: #333;">
+                                    @img.Value
+                                </span>
+
+                                <div class="selection-overlay">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+
+                            </div>
+                        </label>
+                    }
+                }
+                else
+                {
+                    <div class="d-flex align-items-center" role="alert" style="gap: 10px;">
+                        <img src="~/images/empty-box.png" alt="No templates found" style="width:40px; height:40px;" />
+                        <span>Sorry, no design templates were found. We're working on adding more!</span>
+                    </div>
+
+                }
+            </div>
+        </div>
+
+        <!-- Form Fields Section -->
+        <div class="form-section">
+            <h4 class="section-title">Invitation Details</h4>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="Issued" class="form-label">
+                        <i class="fas fa-user"></i>
+                        Select Type
+                    </label>
+                    <select class="form-control" id="Issued" name="Issued" required>
+                        <option value="">-- Select Type --</option>
+                        <option value="CV">Chamini Vidanagamage</option>
+                        <option value="DM">Dananjana Miyuranga</option>
+                        <option value="HG">Hiruni Gunawardhana</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="GeneratedCode" class="form-label">
+                        <i class="fas fa-code"></i>
+                        Generated Code
+                    </label>
+                    <input type="text" id="GeneratedCode" name="UniqCode" class="form-control" readonly placeholder="Auto-generated code will appear here" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="InviterName" class="form-label">
+                    <i class="fas fa-signature"></i>
+                    Inviter Name
+                </label>
+                <input type="text" class="form-control" id="InviterName" name="InviterName" required placeholder="Enter your name" />
+            </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="form-actions">
+            <button type="submit" class="btn btn-generate">
+                <i class="fas fa-magic"></i>
+                Generate Invitation
+            </button>
+        </div>
+    </form>
+
+    <!-- Results Section -->
+    @if (ViewBag.ImagePath != null)
+    {
+        <div class="results-section">
+            <div class="success-message">
+                <i class="fas fa-check-circle"></i>
+                <span>Your invitation has been generated successfully!</span>
+            </div>
+            <div class="download-actions">
+                <a href="@ViewBag.ImagePath" download="InvitationImage.png" class="btn btn-download">
+                    <i class="fas fa-download"></i>
+                    Download Image
+                </a>
+                <a href="@ViewBag.ImagePath" target="_blank" class="btn btn-view">
+                    <i class="fas fa-eye"></i>
+                    View Image
+                </a>
+            </div>
+        </div>
+    }
+
+    @if (ViewBag.Message != null)
+    {
+        <div class="alert alert-success">
+            <i class="fas fa-info-circle"></i>
+            @ViewBag.Message
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById("Issued").addEventListener("change", function () {
+            let prefix = this.value;
+            const codeInput = document.getElementById("GeneratedCode");
+
+            if (!prefix) {
+                codeInput.value = "";
+                return;
+            }
+
+            // Show loading state
+            codeInput.value = "Generating...";
+
+            fetch(`/Home/GetNextCode?prefix=${prefix}`)
+                .then(response => response.json())
+                .then(data => {
+                    codeInput.value = data.code;
+                })
+                .catch(err => {
+                    console.error(err);
+                    codeInput.value = "Error generating code";
+                });
+        });
+
+        // Add form validation
+        document.querySelector('.invitation-form').addEventListener('submit', function(e) {
+            const invitationType = document.querySelector('input[name="InvitationType"]:checked');
+
+            if (!invitationType) {
+                e.preventDefault();
+                alert('Please select an invitation template.');
+                return;
+            }
+        });
+
+        setTimeout(function() {
+            var alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                alert.style.display = 'none';
+            });
+        }, 5000); // hide alerts after 5 seconds
+    </script>
+}

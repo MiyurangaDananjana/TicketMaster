@@ -1,0 +1,109 @@
+﻿@model IEnumerable<InvitationWithPoint>
+
+@{
+    ViewData["Title"] = "Manage Images";
+}
+
+
+<div class="invitation-container">
+    <div class="header-section">
+        <h2 class="page-title">Select Invitation Type</h2>
+        <p class="page-subtitle">Choose your preferred invitation design and fill in the details</p>
+    </div>
+
+    @if (TempData["AlertMessage"] != null)
+    {
+        var alertType = TempData["AlertType"]?.ToString() ?? "info";
+        <div class="alert alert-@alertType alert-dismissible fade show" role="alert">
+            @TempData["AlertMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                @if (Model != null && Model.Any())
+                {
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-list me-2"></i>
+                                Image Collection (@Model.Count() items)
+                            </h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0 text-center align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="width: 80px;">Preview</th>
+                                            <th>Invitation Type</th>
+                                            <th style="width: 100px;">Action</th>  <!-- Fixed width for action -->
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var image in Model)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    @if (!string.IsNullOrEmpty(image.ImagePath))
+                                                    {
+                                                        <img src="@image.ImagePath"
+                                                             alt="Preview"
+                                                             class="img-thumbnail"
+                                                             style="width: 60px; height: 60px; object-fit: cover;"
+                                                             onerror="this.src='/images/no-image.png'">
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="bg-light border rounded d-flex align-items-center justify-content-center"
+                                                             style="width: 60px; height: 60px;">
+                                                            <i class="fas fa-image text-muted"></i>
+                                                        </div>
+                                                    }
+                                                </td>
+                                                <td class="align-middle">
+                                                    <span>@image.Issued</span>
+                                                </td>
+                                                <td class="align-middle">
+                                                    @if (image.InvitationType == "True")
+                                                    {
+                                                        <a href="@Url.Action("DisableImage", "Home", new { issuedCode = image.Issued })"
+                                                           class="btn btn-success btn-xs" style="font-size: 0.7rem; padding: 5px 12px;"
+                                                           title="Click to deactivate this image">
+                                                            <i class="fas fa-toggle-on"></i> Activated
+                                                        </a>
+                                                    }
+                                                    else
+                                                    {
+                                                        <a href="@Url.Action("EnableImage", "Home", new { issuedCode = image.Issued })"
+                                                           class="btn btn-danger btn-xs" style="font-size: 0.7rem; padding: 5px 12px;"
+                                                           title="Click to activate this image">
+                                                            <i class="fas fa-toggle-off"></i> Deactivated
+                                                        </a>
+                                                    }
+                                                </td>
+
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info text-center py-5">
+                        <i class="fas fa-info-circle fa-3x mb-3"></i>
+                        <h4>No Images Found</h4>
+                        <p class="mb-0">There are currently no images to manage.</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+</div>

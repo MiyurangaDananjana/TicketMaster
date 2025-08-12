@@ -1,0 +1,302 @@
+﻿@model TicketMaster.Models.InvitationWithPoint
+@{
+    ViewData["Title"] = "Select Point on Image";
+}
+
+
+<div class="invitation-container">
+    <div class="header-section">
+        <h2 class="page-title">Select Point on Image</h2>
+        <p class="page-subtitle">Upload an image and click to select a specific point for text placement</p>
+    </div>
+
+    <form asp-action="SelectPoint" method="post" enctype="multipart/form-data" class="invitation-form">
+        <!-- Image Upload Section -->
+        <div class="form-section">
+            <h4 class="section-title">Upload Image</h4>
+
+            <div class="form-group">
+                <label for="ImageUpload" class="form-label">
+                    <i class="fas fa-upload"></i>
+                    Choose Image File
+                </label>
+                <div class="file-upload-wrapper">
+                    <input type="file" id="ImageUpload" name="ImageUpload" accept="image/*" required class="file-upload-input" />
+                    <label for="ImageUpload" class="file-upload-label" id="fileUploadLabel">
+                        <i class="fas fa-cloud-upload-alt file-upload-icon"></i>
+                        <span class="upload-text">Click to upload image or drag and drop</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Canvas Section -->
+        <div class="form-section">
+            <h4 class="section-title">Select Point</h4>
+
+            <div class="canvas-instructions">
+                <i class="fas fa-info-circle"></i>
+                <span>Click anywhere on the uploaded image to select a point. A red marker will appear at the selected location.</span>
+            </div>
+
+            <div class="canvas-container">
+                <canvas id="imageCanvas" class="image-canvas" style="display: none;"></canvas>
+            </div>
+
+            <div class="coordinates-display" id="coordinatesDisplay" style="display: none;">
+                <strong>Selected Coordinates:</strong>
+                <span id="displayCoords">No point selected</span>
+            </div>
+        </div>
+
+        <!-- Hidden Inputs -->
+        <input type="hidden" id="CoordinateX" name="CoordinateX" />
+        <input type="hidden" id="CoordinateY" name="CoordinateY" />
+
+        <!-- Submit Button -->
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary" id="saveButton" disabled>
+                <i class="fas fa-save"></i>
+                Save Point Selection
+            </button>
+        </div>
+    </form>
+
+    <!-- Message Display -->
+    <div id="messageContainer"></div>
+</div>
+
+@section Scripts {
+    <script>
+        const input = document.getElementById('ImageUpload');
+        const canvas = document.getElementById('imageCanvas');
+        const ctx = canvas.getContext('2d');
+        const fileUploadLabel = document.getElementById('fileUploadLabel');
+        const uploadText = fileUploadLabel.querySelector('.upload-text');
+        const coordinatesDisplay = document.getElementById('coordinatesDisplay');
+        const displayCoords = document.getElementById('displayCoords');
+        const saveButton = document.getElementById('saveButton');
+        const messageContainer = document.getElementById('messageContainer');
+
+        let img = new Image();
+        let hasImage = false;
+        let hasSelectedPoint = false;
+
+        // File upload handler
+        input.addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (!file) {
+                resetForm();
+                return;
+            }
+
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                showMessage('Please select a valid image file.', 'error');
+                resetForm();
+                return;
+            }
+
+            // Update upload label
+            fileUploadLabel.classList.add('has-file');
+            uploadText.textContent = `Selected: ${file.name}`;
+
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // Image load handler
+        img.onload = function () {
+            hasImage = true;
+
+            // Calculate canvas size (max 800px width, maintain aspect ratio)
+            const maxWidth = 800;
+            let canvasWidth = img.width;
+            let canvasHeight = img.height;
+
+            if (canvasWidth > maxWidth) {
+                const ratio = maxWidth / canvasWidth;
+                canvasWidth = maxWidth;
+                canvasHeight = img.height * ratio;
+            }
+
+            // Set canvas size and draw image
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+            canvas.style.display = 'block';
+
+            ctx.drawImage(img, 0, 0, canvasWidth, canvasHeight);
+
+            // Reset coordinates
+            clearSelection();
+
+            showMessage('Image loaded successfully. Click on the image to select a point.', 'success');
+        };
+
+        // Canvas click handler
+        canvas.addEventListener('click', function (e) {
+            if (!hasImage) return;
+
+            // Calculate click position relative to canvas
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+
+            const x = (e.clientX - rect.left) * scaleX;
+            const y = (e.clientY - rect.top) * scaleY;
+
+            // Store coordinates
+            document.getElementById('CoordinateX').value = Math.round(x);
+            document.getElementById('CoordinateY').value = Math.round(y);
+
+            // Redraw image and add marker
+            drawImageWithMarker(x, y);
+
+            // Update display
+            displayCoords.textContent = `X: ${Math.round(x)}, Y: ${Math.round(y)}`;
+            coordinatesDisplay.style.display = 'block';
+
+            // Enable save button
+            hasSelectedPoint = true;
+            updateSaveButton();
+
+            showMessage('Point selected successfully!', 'success');
+        });
+
+        // Helper functions
+        function drawImageWithMarker(x, y) {
+            // Clear and redraw image
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            // Draw marker
+            ctx.beginPath();
+            ctx.arc(x, y, 8, 0, 2 * Math.PI);
+            ctx.fillStyle = '#dc3545';
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw coordinates text with background
+            const coordText = `(${Math.round(x)}, ${Math.round(y)})`;
+            ctx.font = 'bold 14px Arial';
+            const textWidth = ctx.measureText(coordText).width;
+
+            // Position text to avoid going off canvas
+            let textX = x + 12;
+            let textY = y - 12;
+
+            if (textX + textWidth > canvas.width) textX = x - textWidth - 12;
+            if (textY < 20) textY = y + 30;
+
+            // Draw text background
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(textX - 4, textY - 16, textWidth + 8, 20);
+
+            // Draw text
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(coordText, textX, textY);
+        }
+
+        function clearSelection() {
+            document.getElementById('CoordinateX').value = '';
+            document.getElementById('CoordinateY').value = '';
+            displayCoords.textContent = 'No point selected';
+            coordinatesDisplay.style.display = 'none';
+            hasSelectedPoint = false;
+            updateSaveButton();
+        }
+
+        function resetForm() {
+            hasImage = false;
+            hasSelectedPoint = false;
+            canvas.style.display = 'none';
+            fileUploadLabel.classList.remove('has-file');
+            uploadText.textContent = 'Click to upload image or drag and drop';
+            clearSelection();
+            clearMessage();
+        }
+
+        function updateSaveButton() {
+            saveButton.disabled = !(hasImage && hasSelectedPoint);
+        }
+
+        function showMessage(text, type) {
+            let className = 'message-info';
+            let icon = 'fas fa-info-circle';
+
+            switch(type) {
+                case 'success':
+                    className = 'message-success';
+                    icon = 'fas fa-check-circle';
+                    break;
+                case 'error':
+                    className = 'message-error';
+                    icon = 'fas fa-exclamation-circle';
+                    break;
+            }
+
+            messageContainer.innerHTML = `
+                <div class="message ${className}">
+                    <i class="${icon}"></i>
+                    <span>${text}</span>
+                </div>
+            `;
+
+            // Auto-hide success messages after 3 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    clearMessage();
+                }, 3000);
+            }
+        }
+
+        function clearMessage() {
+            messageContainer.innerHTML = '';
+        }
+
+        // Form validation
+        document.querySelector('.invitation-form').addEventListener('submit', function(e) {
+            if (!hasImage) {
+                e.preventDefault();
+                showMessage('Please upload an image first.', 'error');
+                return;
+            }
+
+            if (!hasSelectedPoint) {
+                e.preventDefault();
+                showMessage('Please select a point on the image.', 'error');
+                return;
+            }
+        });
+
+        // Drag and drop functionality
+        canvas.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            canvas.style.borderColor = '#007bff';
+        });
+
+        canvas.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            canvas.style.borderColor = '#e9ecef';
+        });
+
+        canvas.addEventListener('drop', function(e) {
+            e.preventDefault();
+            canvas.style.borderColor = '#e9ecef';
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                input.files = files;
+                input.dispatchEvent(new Event('change'));
+            }
+        });
+
+        // Initialize
+        updateSaveButton();
+    </script>
+}

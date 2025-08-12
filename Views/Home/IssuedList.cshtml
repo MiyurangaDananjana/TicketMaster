@@ -1,0 +1,445 @@
+﻿@model IEnumerable<Invitation>
+@{
+    ViewData["Title"] = "All Issued Codes";
+}
+
+<!-- Import the CSS file -->
+<link rel="stylesheet" href="~/css/invitation-styles.css" />
+
+<div class="invitation-container">
+    <div class="header-section">
+        <h2 class="page-title">All Issued Invitation Codes</h2>
+        <p class="page-subtitle">View and manage all generated invitation codes</p>
+    </div>
+
+    <div class="invitation-form">
+        <!-- Stats Section -->
+        <div class="form-section">
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-ticket-alt"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-number">@Model.Count()</h3>
+                        <p class="stat-label">Total Invitations</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-number">@Model.Select(x => x.InviterName).Distinct().Count()</h3>
+                        <p class="stat-label">Unique Inviters</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-palette"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-number">@Model.Select(x => x.InvitationType).Distinct().Count()</h3>
+                        <p class="stat-label">Design Types</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search and Filter Section -->
+        <div class="form-section">
+            <h4 class="section-title">Search & Filter</h4>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="searchInput" class="form-label">
+                        <i class="fas fa-search"></i>
+                        Search
+                    </label>
+                    <input type="text" id="searchInput" class="form-control" placeholder="Search by name, code, or type..." />
+                </div>
+                <div class="form-group">
+                    <label for="typeFilter" class="form-label">
+                        <i class="fas fa-filter"></i>
+                        Filter by Type
+                    </label>
+                    <select id="typeFilter" class="form-control">
+                        <option value="">All Types</option>
+                        @foreach (var type in Model.Select(x => x.InvitationType).Distinct().OrderBy(x => x))
+                        {
+                            <option value="@type">@type</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <!-- Results Counter -->
+            <div class="results-counter" id="resultsCounter">
+                Showing @Model.Count() of @Model.Count() records
+            </div>
+        </div>
+
+        <!-- Table Section -->
+        <div class="form-section">
+            <h4 class="section-title">Invitation Records</h4>
+            <div class="table-responsive">
+                <table class="invitation-table" id="invitationTable">
+                    <thead class="table-header">
+                        <tr>
+                            <th onclick="sortTable(0)">
+                                <span>ID</span>
+                                <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th onclick="sortTable(1)">
+                                <span>Inviter Name</span>
+                                <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th onclick="sortTable(2)">
+                                <span>Issued Code</span>
+                                <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th onclick="sortTable(3)">
+                                <span>Invitation Type</span>
+                                <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th onclick="sortTable(4)">
+                                <span>Unique Code</span>
+                                <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                           <th onclick="sortTable(5)">
+                                <span>Created At</span>
+                                <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="table-body">
+                        @foreach (var item in Model)
+                        {
+                            <tr class="table-row" data-inviter="@item.InviterName.ToLower()" data-code="@item.UniqCode.ToLower()" data-type="@item.InvitationType.ToLower()">
+                                <td class="table-cell">
+                                    <span class="cell-content">#@item.Id</span>
+                                </td>
+                                <td class="table-cell">
+                                    <div class="inviter-info">
+                                        <i class="fas fa-user inviter-icon"></i>
+                                        <span class="inviter-name">@item.InviterName</span>
+                                    </div>
+                                </td>
+                                <td class="table-cell">
+                                    <span class="issued-code">@item.Issued</span>
+                                </td>
+                                <td class="table-cell">
+                                    <span class="invitation-type-badge">@item.InvitationType</span>
+                                </td>
+                                <td class="table-cell">
+                                    <div class="unique-code">
+                                        <span class="code-text">@item.UniqCode</span>
+                                        <button type="button" class="copy-btn" onclick="copyToClipboard('@item.UniqCode')" title="Copy to clipboard">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                                <!-- Inside your foreach loop for each row -->
+                                <td class="table-cell">
+                                    <span class="issued-code">@item.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</span>
+                                </td>
+                                <td class="table-cell">
+                                    <div class="action-buttons">
+
+                                        <button type="button" class="btn-small btn-download" onclick="downloadInvitation(@item.Id)" title="Download">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (!Model.Any())
+            {
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-inbox"></i>
+                    </div>
+                    <h3>No invitations found</h3>
+                    <p>Start by creating your first invitation.</p>
+                    <a href="@Url.Action("Index", "Home")" class="btn btn-primary">
+                        <i class="fas fa-plus"></i>
+                        Create Invitation
+                    </a>
+                </div>
+            }
+        </div>
+        <div class="export-buttons mb-3">
+            <a href="@Url.Action("ExportExcel", "Home")" class="btn btn-success me-2">
+                <i class="fas fa-file-excel"></i> Download All Invitations as Excel
+            </a>
+        </div>
+    </div>
+
+</div>
+
+
+
+@section Scripts {
+    <script>
+
+        let sortDirection = {};
+        const totalRecords = @Model.Count()
+
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', function() {
+            filterTable();
+        });
+
+        // Type filter
+        document.getElementById('typeFilter').addEventListener('change', function() {
+            filterTable();
+        });
+
+        function filterTable() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const typeFilter = document.getElementById('typeFilter').value.toLowerCase();
+            const rows = document.querySelectorAll('.table-row');
+            let visibleCount = 0;
+
+            rows.forEach(row => {
+                const inviterName = row.dataset.inviter;
+                const uniqueCode = row.dataset.code;
+                const invitationType = row.dataset.type;
+
+                const matchesSearch = !searchTerm ||
+                    inviterName.includes(searchTerm) ||
+                    uniqueCode.includes(searchTerm) ||
+                    invitationType.includes(searchTerm);
+
+                const matchesType = !typeFilter || invitationType === typeFilter;
+                const isVisible = matchesSearch && matchesType;
+
+                row.style.display = isVisible ? '' : 'none';
+                if (isVisible) visibleCount++;
+            });
+
+            updateResultsCount(visibleCount);
+        }
+
+        function updateResultsCount(visibleCount = null) {
+            if (visibleCount === null) {
+                const visibleRows = document.querySelectorAll('.table-row:not([style*="display: none"])');
+                visibleCount = visibleRows.length;
+            }
+
+            const resultsCounter = document.getElementById('resultsCounter');
+            resultsCounter.innerHTML = `
+                <i class="fas fa-info-circle"></i>
+                Showing <strong>${visibleCount}</strong> of <strong>${totalRecords}</strong> records
+            `;
+
+            // Add styling based on filter status
+            if (visibleCount < totalRecords) {
+                resultsCounter.className = 'results-counter filtered';
+            } else {
+                resultsCounter.className = 'results-counter';
+            }
+        }
+
+        // Sort functionality
+        function sortTable(columnIndex) {
+            const table = document.getElementById('invitationTable');
+            const tbody = table.querySelector('.table-body');
+            const rows = Array.from(tbody.querySelectorAll('.table-row'));
+
+            // Toggle sort direction
+            sortDirection[columnIndex] = sortDirection[columnIndex] === 'asc' ? 'desc' : 'asc';
+
+            // Update sort icons
+            document.querySelectorAll('.sort-icon').forEach(icon => {
+                icon.className = 'fas fa-sort sort-icon';
+            });
+
+            const currentIcon = document.querySelectorAll('.sort-icon')[columnIndex];
+            currentIcon.className = `fas fa-sort-${sortDirection[columnIndex] === 'asc' ? 'up' : 'down'} sort-icon active`;
+
+            // Sort rows
+            rows.sort((a, b) => {
+                const aValue = a.children[columnIndex].textContent.trim();
+                const bValue = b.children[columnIndex].textContent.trim();
+
+                let comparison = 0;
+
+                if (columnIndex === 0) { // ID numeric sort
+                    comparison = parseInt(aValue.replace('#', '')) - parseInt(bValue.replace('#', ''));
+                } else if (columnIndex === 5) { // Created At date sort
+                    comparison = new Date(aValue) - new Date(bValue);
+                } else {
+                    comparison = aValue.localeCompare(bValue);
+                }
+
+                return sortDirection[columnIndex] === 'asc' ? comparison : -comparison;
+            });
+
+            // Reappend sorted rows
+            rows.forEach(row => tbody.appendChild(row));
+
+            // Show sort feedback
+            showToast(`Table sorted by ${['ID', 'Inviter Name', 'Issued Code', 'Invitation Type', 'Unique Code'][columnIndex]} (${sortDirection[columnIndex].toUpperCase()})`, 'info');
+        }
+
+        // Copy to clipboard
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                showToast('Code copied to clipboard!', 'success');
+            }).catch(function() {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                textArea.style.position = 'fixed';
+                textArea.style.opacity = '0';
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showToast('Code copied to clipboard!', 'success');
+            });
+        }
+
+
+
+        // Download invitation
+        function downloadInvitation(id) {
+            showToast('Preparing download...', 'info');
+            // Add a small delay for better UX
+            setTimeout(() => {
+                window.location.href = `@Url.Action("Download", "Home")/${id}`;
+            }, 500);
+        }
+
+        // Toast notification with enhanced functionality
+        function showToast(message, type = 'info') {
+            // Remove existing toasts to prevent stacking
+            const existingToasts = document.querySelectorAll('.toast');
+            existingToasts.forEach(toast => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        document.body.removeChild(toast);
+                    }
+                }, 300);
+            });
+
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+
+            const iconMap = {
+                'success': 'check-circle',
+                'error': 'exclamation-circle',
+                'warning': 'exclamation-triangle',
+                'info': 'info-circle'
+            };
+
+            toast.innerHTML = `
+                <i class="fas fa-${iconMap[type] || 'info-circle'}"></i>
+                <span>${message}</span>
+            `;
+
+            document.body.appendChild(toast);
+
+            // Show toast with animation
+            requestAnimationFrame(() => {
+                toast.classList.add('show');
+            });
+
+            // Auto-hide toast
+            const hideTimeout = type === 'error' ? 5000 : 3000; // Error messages stay longer
+            setTimeout(() => {
+                if (toast.classList.contains('show')) {
+                    toast.classList.remove('show');
+                    setTimeout(() => {
+                        if (toast.parentNode) {
+                            document.body.removeChild(toast);
+                        }
+                    }, 300);
+                }
+            }, hideTimeout);
+
+            // Allow manual dismiss by clicking
+            toast.addEventListener('click', () => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        document.body.removeChild(toast);
+                    }
+                }, 300);
+            });
+        }
+
+        // Clear search functionality
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('typeFilter').value = '';
+            filterTable();
+            showToast('Search cleared', 'info');
+        }
+
+
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Ctrl/Cmd + F to focus search
+            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                e.preventDefault();
+                document.getElementById('searchInput').focus();
+                showToast('Search focused - start typing to filter', 'info');
+            }
+
+            // Escape to clear search
+            if (e.key === 'Escape') {
+                const searchInput = document.getElementById('searchInput');
+                if (searchInput.value || document.getElementById('typeFilter').value) {
+                    clearSearch();
+                }
+            }
+        });
+
+        // Enhanced initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            updateResultsCount();
+
+            // Add search input enhancements
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('focus', function() {
+                this.parentElement.classList.add('focused');
+            });
+
+            searchInput.addEventListener('blur', function() {
+                this.parentElement.classList.remove('focused');
+            });
+
+            // Show welcome message if there are records
+            if (totalRecords > 0) {
+                setTimeout(() => {
+                    showToast(`Welcome! ${totalRecords} invitation${totalRecords !== 1 ? 's' : ''} loaded successfully.`, 'success');
+                }, 500);
+            }
+
+            // Add tooltips for better UX
+            const copyButtons = document.querySelectorAll('.copy-btn');
+            copyButtons.forEach(btn => {
+                btn.addEventListener('mouseenter', function() {
+                    showToast('Click to copy code', 'info');
+                    setTimeout(() => {
+                        const toasts = document.querySelectorAll('.toast');
+                        toasts.forEach(toast => {
+                            if (toast.textContent.includes('Click to copy')) {
+                                toast.classList.remove('show');
+                            }
+                        });
+                    }, 1500);
+                });
+            });
+        });
+
+
+    </script>
+}
