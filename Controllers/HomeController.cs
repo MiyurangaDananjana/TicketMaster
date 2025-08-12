@@ -5,12 +5,14 @@ using iText.Kernel.Pdf;
 using iText.Layout;
 using iText.Layout.Element;
 using iText.Layout.Properties;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.IO;
 using TicketMaster.Data;
 using TicketMaster.Models;
 using TicketMaster.Models.DTOs;
 
+[Authorize]
 public class HomeController : Controller
 {
     private readonly ApplicationDbContext _context;
@@ -97,7 +99,8 @@ public class HomeController : Controller
                 Issued = model.Issued,
                 UniqCode = code,
                 ImagePath = imagePath,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                UserCategory = model.UserCategory ?? "Guest"
             };
 
             _context.Invitations.Add(invitation);
