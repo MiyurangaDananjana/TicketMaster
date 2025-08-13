@@ -417,7 +417,9 @@ public class HomeController : Controller
             worksheet.Cell(1, 3).Value = "Issued Code";
             worksheet.Cell(1, 4).Value = "Invitation Type";
             worksheet.Cell(1, 5).Value = "Unique Code";
-            worksheet.Cell(1, 6).Value = "Create At";
+            worksheet.Cell(1, 6).Value = "Category";
+            worksheet.Cell(1, 7).Value = "Create At";
+            
 
             // Data rows
             for (int i = 0; i < invitations.Count; i++)
@@ -428,7 +430,8 @@ public class HomeController : Controller
                 worksheet.Cell(i + 2, 3).Value = inv.Issued;
                 worksheet.Cell(i + 2, 4).Value = inv.InvitationType;
                 worksheet.Cell(i + 2, 5).Value = inv.UniqCode;
-                worksheet.Cell(i + 2, 6).Value = inv.CreatedAt;
+                worksheet.Cell(i + 2, 6).Value = inv.UserCategory;
+                worksheet.Cell(i + 2, 7).Value = inv.CreatedAt;
             }
 
 

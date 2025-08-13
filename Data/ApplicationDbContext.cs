@@ -13,5 +13,7 @@ namespace TicketMaster.Data
         public DbSet<Invitation> Invitations { get; set; }
 
         public DbSet<InvitationWithPoint> InvitationsWithPoint { get; set; }
+
+        public DbSet<User> Users { get; set; }
     }
 }
