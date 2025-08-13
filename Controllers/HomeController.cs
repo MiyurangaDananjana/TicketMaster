@@ -5,12 +5,14 @@ using iText.Kernel.Pdf;
 using iText.Layout;
 using iText.Layout.Element;
 using iText.Layout.Properties;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.IO;
 using TicketMaster.Data;
 using TicketMaster.Models;
 using TicketMaster.Models.DTOs;
 
+[Authorize]
 public class HomeController : Controller
 {
     private readonly ApplicationDbContext _context;
@@ -97,7 +99,8 @@ public class HomeController : Controller
                 Issued = model.Issued,
                 UniqCode = code,
                 ImagePath = imagePath,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                UserCategory = model.UserCategory ?? "Guest"
             };
 
             _context.Invitations.Add(invitation);
@@ -414,7 +417,9 @@ public class HomeController : Controller
             worksheet.Cell(1, 3).Value = "Issued Code";
             worksheet.Cell(1, 4).Value = "Invitation Type";
             worksheet.Cell(1, 5).Value = "Unique Code";
-            worksheet.Cell(1, 6).Value = "Create At";
+            worksheet.Cell(1, 6).Value = "Category";
+            worksheet.Cell(1, 7).Value = "Create At";
+            
 
             // Data rows
             for (int i = 0; i < invitations.Count; i++)
@@ -425,7 +430,8 @@ public class HomeController : Controller
                 worksheet.Cell(i + 2, 3).Value = inv.Issued;
                 worksheet.Cell(i + 2, 4).Value = inv.InvitationType;
                 worksheet.Cell(i + 2, 5).Value = inv.UniqCode;
-                worksheet.Cell(i + 2, 6).Value = inv.CreatedAt;
+                worksheet.Cell(i + 2, 6).Value = inv.UserCategory;
+                worksheet.Cell(i + 2, 7).Value = inv.CreatedAt;
             }
 
 
