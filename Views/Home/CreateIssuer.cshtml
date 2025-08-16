@@ -1,0 +1,578 @@
+﻿@model List<TicketMaster.Models.Issued>
+@{
+    ViewData["Title"] = "Manage Issued Codes";
+}
+
+<div class="invitation-container">
+    <div class="header-section">
+        <h2 class="page-title">Manage Issued Codes</h2>
+        <p class="page-subtitle">Add, edit, view, and delete issued user codes</p>
+    </div>
+
+    @if (ViewBag.SuccessMessage != null)
+    {
+        <div class="alert alert-success" role="alert">
+            <i class="fas fa-check-circle"></i>
+            @ViewBag.SuccessMessage
+        </div>
+    }
+
+    @if (ViewBag.ErrorMessage != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-triangle"></i>
+            @ViewBag.ErrorMessage
+        </div>
+    }
+
+    <!-- Add New Record Section -->
+    <div class="form-section">
+        <div class="section-header">
+            <h4 class="section-title">
+                <i class="fas fa-plus-circle"></i>
+                Add New Issued Code
+            </h4>
+            <button type="button" class="btn btn-toggle" onclick="toggleAddForm()">
+                <i class="fas fa-chevron-down" id="toggle-icon"></i>
+            </button>
+        </div>
+        
+        <div id="add-form" class="add-form" style="display: none;">
+            <form asp-action="CreateIssuer" method="post" class="invitation-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="UserCode" class="form-label">
+                            <i class="fas fa-code"></i>
+                            User Code
+                        </label>
+                        <input type="text" class="form-control" id="UserCode" name="UserCode" required placeholder="Enter unique user code" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="Name" class="form-label">
+                            <i class="fas fa-user"></i>
+                            Name
+                        </label>
+                        <input type="text" class="form-control" id="Name" name="Name" required placeholder="Enter user name" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="Status" class="form-label">
+                        <i class="fas fa-toggle-on"></i>
+                        Status
+                    </label>
+                    <select class="form-control" id="Status" name="Status">
+                        <option value="True">Active</option>
+                        <option value="False">Inactive</option>
+                    </select>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-generate">
+                        <i class="fas fa-plus"></i>
+                        Add Record
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="clearForm()">
+                        <i class="fas fa-times"></i>
+                        Clear
+                    </button>
+             
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Records List Section -->
+    <div class="form-section">
+        <div class="section-header">
+            <h4 class="section-title">
+                <i class="fas fa-list"></i>
+                Issued Codes List
+            </h4>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search by name or code..." onkeyup="filterTable()">
+                <i class="fas fa-search"></i>
+            </div>
+        </div>
+
+        @if (Model != null && Model.Count > 0)
+        {
+            <div class="table-responsive">
+                <table class="table table-striped" id="issuedTable">
+                    <thead>
+                        <tr>
+                            <th>User Code</th>
+                            <th>Name</th>
+                            <th>Status</th>
+                            <th>Created At</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr id="row-@item.UserCode">
+                                <td class="user-code">@item.UserCode</td>
+                                <td class="name">@item.Name</td>
+                                <td>
+                                    <span class="status-badge @(item.Status == "True" ? "status-active" : "status-inactive")">
+                                        @(item.Status == "True" ? "Active" : "Inactive")
+                                    </span>
+                                </td>
+                                <td>@item.CreatedAt.ToString("MMM dd, yyyy HH:mm")</td>
+                                <td class="action-buttons">
+                                    <button type="button" class="btn btn-edit" onclick="editRecord('@item.UserCode', '@item.Name', '@item.Status')">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-delete" onclick="deleteRecord('@item.UserCode', '@item.Name')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="d-flex align-items-center justify-content-center" style="gap: 10px; padding: 40px; background: #f8f9fa; border-radius: 8px;">
+                <img src="~/images/empty-box.png" alt="No records found" style="width:40px; height:40px;" />
+                <span>No issued codes found. Click the "Add New Issued Code" section above to create your first record!</span>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">
+                <i class="fas fa-edit"></i>
+                Edit Issued Code
+            </h5>
+            <span class="close" onclick="closeEditModal()">&times;</span>
+        </div>
+        <form id="editForm" asp-action="Update" method="post">
+            <div class="modal-body">
+                <input type="hidden" id="editId" name="Id" />
+                
+                <div class="form-group">
+                    <label for="editUserCode" class="form-label">
+                        <i class="fas fa-code"></i>
+                        User Code
+                    </label>
+                    <input type="text" class="form-control" id="editUserCode" name="UserCode" required />
+                </div>
+
+                <div class="form-group">
+                    <label for="editName" class="form-label">
+                        <i class="fas fa-user"></i>
+                        Name
+                    </label>
+                    <input type="text" class="form-control" id="editName" name="Name" required />
+                </div>
+
+                <div class="form-group">
+                    <label for="editStatus" class="form-label">
+                        <i class="fas fa-toggle-on"></i>
+                        Status
+                    </label>
+                    <select class="form-control" id="editStatus" name="Status">
+                        <option value="True">Active</option>
+                        <option value="False">Inactive</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeEditModal()">
+                    <i class="fas fa-times"></i>
+                    Cancel
+                </button>
+                <button type="submit" class="btn btn-generate">
+                    <i class="fas fa-save"></i>
+                    Update Record
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">
+                <i class="fas fa-exclamation-triangle text-danger"></i>
+                Confirm Delete
+            </h5>
+            <span class="close" onclick="closeDeleteModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <p>Are you sure you want to delete the record for <strong id="deleteItemName"></strong>?</p>
+            <p class="text-danger">This action cannot be undone.</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">
+                <i class="fas fa-times"></i>
+                Cancel
+            </button>
+            <form id="deleteForm" asp-action="Delete" method="post" style="display: inline;">
+                <input type="hidden" id="deleteId" name="userCode" />
+                <button type="submit" class="btn btn-delete">
+                    <i class="fas fa-trash"></i>
+                    Delete
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <style>
+        .invitation-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .btn-toggle {
+            background: none;
+            border: none;
+            color: #6c757d;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .btn-toggle.rotated {
+            transform: rotate(180deg);
+        }
+
+        .add-form {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+        }
+
+        .search-box {
+            position: relative;
+            max-width: 300px;
+        }
+
+        .search-box input {
+            padding: 8px 35px 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            width: 100%;
+        }
+
+        .search-box i {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+        }
+
+        .table-responsive {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .table {
+            margin: 0;
+        }
+
+        .table th {
+            background: #f8f9fa;
+            border-top: none;
+            font-weight: 600;
+            padding: 15px;
+        }
+
+        .table td {
+            padding: 12px 15px;
+            vertical-align: middle;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .action-buttons {
+            white-space: nowrap;
+        }
+
+        .btn-edit, .btn-delete {
+            padding: 6px 10px;
+            margin: 0 2px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .btn-edit {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-edit:hover {
+            background: #0056b3;
+        }
+
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: #c82333;
+        }
+
+        .modal {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex !important;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 20px 20px 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-footer {
+            padding: 0 20px 20px 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .close {
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #aaa;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+
+        .alert {
+            padding: 12px 20px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-danger {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+
+    <script>
+        function toggleAddForm() {
+            const form = document.getElementById('add-form');
+            const icon = document.getElementById('toggle-icon');
+            const toggle = document.querySelector('.btn-toggle');
+            
+            if (form.style.display === 'none' || form.style.display === '') {
+                form.style.display = 'block';
+                icon.className = 'fas fa-chevron-up';
+            } else {
+                form.style.display = 'none';
+                icon.className = 'fas fa-chevron-down';
+            }
+        }
+
+        function clearForm() {
+            document.getElementById('UserCode').value = '';
+            document.getElementById('Name').value = '';
+            document.getElementById('Status').value = 'True';
+        }
+
+        function filterTable() {
+            const input = document.getElementById('searchInput');
+            const filter = input.value.toLowerCase();
+            const table = document.getElementById('issuedTable');
+            const rows = table.getElementsByTagName('tr');
+
+            for (let i = 1; i < rows.length; i++) {
+                const userCode = rows[i].getElementsByClassName('user-code')[0];
+                const name = rows[i].getElementsByClassName('name')[0];
+                
+                if (userCode && name) {
+                    const userCodeText = userCode.textContent || userCode.innerText;
+                    const nameText = name.textContent || name.innerText;
+                    
+                    if (userCodeText.toLowerCase().indexOf(filter) > -1 || 
+                        nameText.toLowerCase().indexOf(filter) > -1) {
+                        rows[i].style.display = '';
+                    } else {
+                        rows[i].style.display = 'none';
+                    }
+                }
+            }
+        }
+
+        function editRecord(userCode, name, status) {
+            console.log('Edit function called with:', userCode, name, status);
+            
+            // Debug: Check if elements exist
+            const hiddenInput = document.getElementById('editUserCodeHidden');
+            const displayInput = document.getElementById('editUserCodeDisplay');
+            const nameInput = document.getElementById('editName');
+            const statusSelect = document.getElementById('editStatus');
+            const modal = document.getElementById('editModal');
+
+            
+            console.log('Elements found:');
+            console.log('hiddenInput:', hiddenInput);
+            console.log('displayInput:', displayInput);
+            console.log('nameInput:', nameInput);
+            console.log('statusSelect:', statusSelect);
+            console.log('modal:', modal);
+            
+            // Only set values if elements exist
+            if (hiddenInput) hiddenInput.value = userCode;
+            if (displayInput) displayInput.value = userCode;
+            if (nameInput) nameInput.value = name;
+            if (statusSelect) statusSelect.value = status;
+            
+            // Show modal
+            if (modal) {
+                modal.style.display = 'flex';
+                modal.classList.add('show');
+                console.log('Modal should be visible now');
+            } else {
+                console.error('Modal element not found!');
+            }
+        }
+
+        function closeEditModal() {
+            const modal = document.getElementById('editModal');
+            modal.style.display = 'none';
+            modal.classList.remove('show');
+        }
+
+        function deleteRecord(userCode, name) {
+            document.getElementById('deleteId').value = userCode;
+            document.getElementById('deleteItemName').textContent = name;
+            document.getElementById('deleteModal').style.display = 'flex';
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').style.display = 'none';
+        }
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            const editModal = document.getElementById('editModal');
+            const deleteModal = document.getElementById('deleteModal');
+            
+            if (event.target === editModal) {
+                closeEditModal();
+            }
+            if (event.target === deleteModal) {
+                closeDeleteModal();
+            }
+        }
+
+        // Auto-hide alerts after 5 seconds
+        setTimeout(function() {
+            var alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                alert.style.display = 'none';
+            });
+        }, 5000);
+
+        // Form validation
+        document.querySelector('.invitation-form').addEventListener('submit', function(e) {
+            const userCode = document.getElementById('UserCode').value.trim();
+            const name = document.getElementById('Name').value.trim();
+
+            if (!userCode || !name) {
+                e.preventDefault();
+                alert('Please fill in all required fields.');
+                return;
+            }
+        });
+    </script>
+}

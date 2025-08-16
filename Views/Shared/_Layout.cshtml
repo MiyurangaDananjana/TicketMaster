@@ -1,4 +1,4 @@
-﻿@using Microsoft.AspNetCore.Http
+﻿﻿@using Microsoft.AspNetCore.Http
 @inject IHttpContextAccessor HttpContextAccessor
 
 <!DOCTYPE html>
@@ -28,33 +28,59 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">
-                                <i class="fas fa-home me-1"></i> Home
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="IssuedList">
-                                <i class="fas fa-list-alt me-1"></i> View Issued Items
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="SelectPoint">
-                                <i class="fas fa-map-marker-alt me-1"></i> Upload Design
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="ManageDesing">
-                                <i class="fas fa-cogs me-1"></i> Manage Design
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="DownloadSqliteBackup">
-                                <i class="fas fa-database me-1"></i> Download Backup
-                            </a>
-                        </li>
-                    </ul>
+
+                    @if (User.Identity.IsAuthenticated)
+                    {
+                        <ul class="navbar-nav flex-grow-1">
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">
+                                    <i class="fas fa-home me-1"></i> Home
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="IssuedList">
+                                    <i class="fas fa-list-alt me-1"></i> View Issued Items
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="SelectPoint">
+                                    <i class="fas fa-map-marker-alt me-1"></i> Upload Design
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="ManageDesing">
+                                    <i class="fas fa-cogs me-1"></i> Manage Design
+                                </a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="SaveSettings">
+                                    <i class="fa fa-cog" aria-hidden="true"></i> Settings
+                                </a>
+                            </li>
+
+
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="CreateIssuer">
+                                    <i class="fa fa-user" aria-hidden="true"></i> Create Issuer
+                                </a>
+                            </li>
+
+
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="DownloadSqliteBackup">
+                                    <i class="fas fa-database me-1"></i> Download Backup
+                                </a>
+                            </li>
+                        </ul>
+
+                        <form method="post" asp-controller="Account" asp-action="Logout" id="logoutForm" style="display:inline;">
+                            <button type="submit" style="background-color: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                                Logout (@User.Identity.Name)
+                            </button>
+                        </form>
+                    }
+
                 </div>
             </div>
         </nav>
