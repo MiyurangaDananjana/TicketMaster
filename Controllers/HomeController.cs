@@ -1,13 +1,7 @@
 using ClosedXML.Excel;
-using iText.IO.Font.Constants;
-using iText.Kernel.Colors;
-using iText.Kernel.Pdf;
-using iText.Layout;
-using iText.Layout.Element;
-using iText.Layout.Properties;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.IO;
+using System.Drawing;
 using TicketMaster.Data;
 using TicketMaster.Models;
 using TicketMaster.Models.DTOs;
@@ -30,6 +24,10 @@ public class HomeController : Controller
         if (TempData["ImageUrl"] != null)
         {
             ViewBag.ImagePath = TempData["ImageUrl"].ToString();
+
+            ViewBag.GeneratedCode = TempData["GeneratedCode"] != null
+                ? TempData["GeneratedCode"].ToString()
+                : null;
         }
 
         // Pass success or error messages to ViewBag
@@ -50,6 +48,9 @@ public class HomeController : Controller
                 Path = i.ImagePath
             })
             .ToList() ?? new List<ImagesDTO>();
+
+
+        ViewBag.IssuedCodes = _context.Issueds.Where(x=>x.Status == "True").ToList();
 
         InvitationDTO invitationDTO = new InvitationDTO
         {
@@ -99,8 +100,7 @@ public class HomeController : Controller
                 Issued = model.Issued,
                 UniqCode = code,
                 ImagePath = imagePath,
-                CreatedAt = DateTime.UtcNow,
-                UserCategory = model.UserCategory ?? "Guest"
+                CreatedAt = DateTime.Now,
             };
 
             _context.Invitations.Add(invitation);
@@ -114,6 +114,8 @@ public class HomeController : Controller
             // Log the exception as needed
             TempData["ErrorMessage"] = "An error occurred while saving the invitation. Please try again.";
         }
+
+        TempData["GeneratedCode"] = code;
 
         return RedirectToAction("Index");
     }
@@ -138,6 +140,10 @@ public class HomeController : Controller
         {
             var originalFilePath = Path.Combine(_env.WebRootPath, imageDetail.ImagePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
 
+            var existingSettings = _context.ApplicationSettings.FirstOrDefault();
+
+            float fontSize = ParseFontSize(existingSettings.FrontSize);
+
             if (!System.IO.File.Exists(originalFilePath))
                 return null;
 
@@ -155,8 +161,8 @@ public class HomeController : Controller
             using (var bitmap = new System.Drawing.Bitmap(originalFilePath))
             using (var graphics = System.Drawing.Graphics.FromImage(bitmap))
             {
-                var font = new System.Drawing.Font("Arial", 24, System.Drawing.FontStyle.Bold);
-                var brush = System.Drawing.Brushes.Red;
+                var font = new System.Drawing.Font(existingSettings.FontFamily, fontSize, System.Drawing.FontStyle.Bold);
+                var brush = System.Drawing.Brushes.Black;
 
                 int x = Math.Clamp(imageDetail.CoordinateX, 0, bitmap.Width - 1);
                 int y = Math.Clamp(imageDetail.CoordinateY, 0, bitmap.Height - 1);
@@ -176,6 +182,22 @@ public class HomeController : Controller
             return null;
         }
     }
+
+    private float ParseFontSize(string sizeValue)
+    {
+        if (string.IsNullOrWhiteSpace(sizeValue))
+            return 12f; // Default font size if empty or null
+
+        // Remove "px" if present and convert to float
+        if (sizeValue.EndsWith("px", StringComparison.OrdinalIgnoreCase))
+            sizeValue = sizeValue.Replace("px", "").Trim();
+
+        if (float.TryParse(sizeValue, out float result))
+            return result;
+
+        return 12f; // Fallback default if parsing fails
+    }
+
 
     public IActionResult DownloadInvitationImage(string invitationType, string code)
     {
@@ -292,7 +314,6 @@ public class HomeController : Controller
         return View();
     }
 
-
     public IActionResult ManageDesing()
     {
         List<InvitationWithPoint> invitations = _context.InvitationsWithPoint.ToList();
@@ -316,7 +337,7 @@ public class HomeController : Controller
                 invitation.InvitationType = "False";
                 _context.SaveChanges();
                 TempData["AlertMessage"] = "Image deactivated successfully.";
-                TempData["AlertType"] = "danger";  // For Bootstrap alert-danger
+                TempData["AlertType"] = "danger";
                 return RedirectToAction("ManageDesing");
             }
         }
@@ -376,31 +397,48 @@ public class HomeController : Controller
             return RedirectToAction("Index");
         }
 
-        // The invitation's image path (relative URL) saved in the DB
         string imagePath = invitation.ImagePath;
-
         if (string.IsNullOrEmpty(imagePath))
         {
             TempData["ErrorMessage"] = "No image available to download.";
             return RedirectToAction("Index");
         }
 
-        // Map relative URL to physical file path
         var physicalPath = Path.Combine(_env.WebRootPath, imagePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
-
         if (!System.IO.File.Exists(physicalPath))
         {
             TempData["ErrorMessage"] = "Image file not found.";
             return RedirectToAction("Index");
         }
 
-        // Read the file bytes
-        var fileBytes = System.IO.File.ReadAllBytes(physicalPath);
-        string fileName = Path.GetFileName(physicalPath);
+        // Load image and draw watermark
+        using (var image = new Bitmap(physicalPath))
+        using (var graphics = Graphics.FromImage(image))
+        {
+            // Configure watermark text style
+            var font = new Font("Arial", 80, FontStyle.Bold, GraphicsUnit.Pixel);
+            var color = System.Drawing.Color.FromArgb(128, System.Drawing.Color.White); // semi-transparent red
+            var brush = new SolidBrush(color);
 
-        // Return file for download
-        return File(fileBytes, "application/octet-stream", fileName);
+            var text = "COPY";
+            var size = graphics.MeasureString(text, font);
+
+            // Draw watermark diagonally across the center
+            graphics.TranslateTransform(image.Width / 2, image.Height / 2);
+            graphics.RotateTransform(-30); // rotate text
+            graphics.DrawString(text, font, brush, -size.Width / 2, -size.Height / 2);
+            graphics.ResetTransform();
+
+            // Save to memory stream for returning
+            using (var ms = new MemoryStream())
+            {
+                image.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+                string fileName = $"{invitation.UniqCode ?? "Invitation"}.png";
+                return File(ms.ToArray(), "image/png", fileName);
+            }
+        }
     }
+
 
     [HttpGet]
     public IActionResult ExportExcel()
@@ -417,9 +455,8 @@ public class HomeController : Controller
             worksheet.Cell(1, 3).Value = "Issued Code";
             worksheet.Cell(1, 4).Value = "Invitation Type";
             worksheet.Cell(1, 5).Value = "Unique Code";
-            worksheet.Cell(1, 6).Value = "Category";
-            worksheet.Cell(1, 7).Value = "Create At";
-            
+            worksheet.Cell(1, 6).Value = "Create At";
+
 
             // Data rows
             for (int i = 0; i < invitations.Count; i++)
@@ -430,8 +467,7 @@ public class HomeController : Controller
                 worksheet.Cell(i + 2, 3).Value = inv.Issued;
                 worksheet.Cell(i + 2, 4).Value = inv.InvitationType;
                 worksheet.Cell(i + 2, 5).Value = inv.UniqCode;
-                worksheet.Cell(i + 2, 6).Value = inv.UserCategory;
-                worksheet.Cell(i + 2, 7).Value = inv.CreatedAt;
+                worksheet.Cell(i + 2, 6).Value = inv.CreatedAt;
             }
 
 
@@ -476,4 +512,231 @@ public class HomeController : Controller
         }
     }
 
+    public IActionResult SaveSettings()
+    {
+        var existingSettings = _context.ApplicationSettings.FirstOrDefault();
+
+        var appSetting = existingSettings ?? new ApplicationSetting
+        {
+            ColorCode = "#000000",
+            FrontSize = "14px",
+            FontFamily = "Arial"
+        };
+        return View(appSetting);
+    }
+
+    [HttpPost]
+    public IActionResult SaveSettings(ApplicationSetting model)
+    {
+        if (ModelState.IsValid)
+        {
+
+            // Check if settings already exist
+            var existingSettings = _context.ApplicationSettings.FirstOrDefault();
+
+            if (existingSettings != null)
+            {
+                // Update existing settings
+                existingSettings.ColorCode = model.ColorCode;
+                existingSettings.FrontSize = model.FrontSize;
+                existingSettings.FontFamily = model.FontFamily;
+            }
+            else
+            {
+                // Create new settings
+                var newSettings = new ApplicationSetting
+                {
+                    ColorCode = model.ColorCode,
+                    FrontSize = model.FrontSize,
+                    FontFamily = model.FontFamily
+                };
+                _context.ApplicationSettings.Add(newSettings);
+            }
+
+            // Save changes to the database
+            _context.SaveChanges();
+
+            TempData["Success"] = "Settings saved successfully!";
+            return RedirectToAction("SaveSettings");
+        }
+
+        return View(model);
+    }
+
+    // Your existing controller methods - exactly as you have them working:
+
+    public IActionResult CreateIssuer()
+    {
+        try
+        {
+            var issuedList = _context.Issueds
+                .OrderByDescending(x => x.CreatedAt)
+                .ToList();
+
+            return View(issuedList);
+        }
+        catch (Exception ex)
+        {
+            ViewBag.ErrorMessage = "An error occurred while loading the records.";
+            return View(new List<Issued>());
+        }
+    }
+
+    [HttpPost]
+    public IActionResult CreateIssuer(Issued model)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                // Check if UserCode already exists
+                var existingCode = _context.Issueds
+                    .FirstOrDefault(x => x.UserCode == model.UserCode);
+
+                if (existingCode != null)
+                {
+                    ViewBag.ErrorMessage = $"User code '{model.UserCode}' already exists. Please use a different code.";
+                    return RedirectToAction("CreateIssuer");
+                }
+
+                model.CreatedAt = DateTime.UtcNow;
+                _context.Issueds.Add(model);
+                _context.SaveChanges();
+
+                ViewBag.SuccessMessage = $"Successfully added '{model.Name}' with code '{model.UserCode}'.";
+            }
+            else
+            {
+                ViewBag.ErrorMessage = "Please check the form data and try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            ViewBag.ErrorMessage = "An error occurred while creating the record. Please try again.";
+        }
+
+        return RedirectToAction("CreateIssuer");
+    }
+
+    [HttpPost]
+    public IActionResult Update(Issued model)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                var existingRecord = _context.Issueds
+                    .FirstOrDefault(x => x.UserCode == model.UserCode);
+
+                if (existingRecord != null)
+                {
+                    existingRecord.Name = model.Name;
+                    existingRecord.Status = model.Status;
+                    // Don't update UserCode since it's the primary key
+                    // Don't update CreatedAt to preserve original creation time
+
+                    _context.Issueds.Update(existingRecord);
+                    _context.SaveChanges();
+
+                    ViewBag.SuccessMessage = $"Successfully updated '{model.Name}'.";
+                }
+                else
+                {
+                    ViewBag.ErrorMessage = "Record not found.";
+                }
+            }
+            else
+            {
+                ViewBag.ErrorMessage = "Please check the form data and try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            ViewBag.ErrorMessage = "An error occurred while updating the record. Please try again.";
+        }
+
+        return RedirectToAction("CreateIssuer");
+    }
+
+    [HttpPost]
+    public IActionResult Delete(string userCode)
+    {
+        try
+        {
+            var record = _context.Issueds
+                .FirstOrDefault(x => x.UserCode == userCode);
+
+            if (record != null)
+            {
+                _context.Issueds.Remove(record);
+                _context.SaveChanges();
+
+                ViewBag.SuccessMessage = $"Successfully deleted '{record.Name}'.";
+            }
+            else
+            {
+                ViewBag.ErrorMessage = "Record not found.";
+            }
+        }
+        catch (Exception ex)
+        {
+            ViewBag.ErrorMessage = "An error occurred while deleting the record. Please try again.";
+        }
+
+        return RedirectToAction("CreateIssuer");
+    }
+
+    public IActionResult CheckUserCodeExists(string userCode, string? excludeUserCode = null)
+    {
+        try
+        {
+            var query = _context.Issueds.AsQueryable();
+
+            // Check for the same user code
+            query = query.Where(x => x.UserCode == userCode);
+
+            // Optionally exclude a specific UserCode
+            if (!string.IsNullOrEmpty(excludeUserCode))
+            {
+                query = query.Where(x => x.UserCode != excludeUserCode);
+            }
+
+            bool exists = query.Any();
+            return Json(new { exists });
+        }
+        catch
+        {
+            return Json(new { exists = false });
+        }
+    }
+
+    public IActionResult GetRecord(string userCode)
+    {
+        try
+        {
+            var record = _context.Issueds
+                .FirstOrDefault(x => x.UserCode == userCode);
+
+            if (record != null)
+            {
+                return Json(new
+                {
+                    success = true,
+                    data = new
+                    {
+                        userCode = record.UserCode,
+                        name = record.Name,
+                        status = record.Status,
+                        createdAt = record.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")
+                    }
+                });
+            }
+
+            return Json(new { success = false, message = "Record not found." });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "An error occurred." });
+        }
+    }
 }

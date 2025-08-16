@@ -61,6 +61,6 @@ public class AccountController : Controller
     private bool IsValidUser(string email, string password)
     {
         // TODO: Implement your user validation (DB check, etc.)
-        return email == "test@example.com" && password == "password";
+        return email == "admin@gmail.com" && password == "admin123";
     }
 }

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TicketMaster.Data;
 
@@ -10,9 +11,11 @@ using TicketMaster.Data;
 namespace TicketMaster.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250816061001_add new cl new")]
+    partial class addnewclnew
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.8");
@@ -100,12 +103,13 @@ namespace TicketMaster.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("IssuedUserCode")
+                    b.Property<string>("IssuedUserUserCode")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("IssuedUserCode");
+                    b.HasIndex("IssuedUserUserCode");
 
                     b.ToTable("InvitationsWithPoint");
                 });
@@ -172,9 +176,13 @@ namespace TicketMaster.Migrations
 
             modelBuilder.Entity("TicketMaster.Models.InvitationWithPoint", b =>
                 {
-                    b.HasOne("TicketMaster.Models.Issued", null)
+                    b.HasOne("TicketMaster.Models.Issued", "IssuedUser")
                         .WithMany("InvitationsWithPoint")
-                        .HasForeignKey("IssuedUserCode");
+                        .HasForeignKey("IssuedUserUserCode")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("IssuedUser");
                 });
 
             modelBuilder.Entity("TicketMaster.Models.Issued", b =>
