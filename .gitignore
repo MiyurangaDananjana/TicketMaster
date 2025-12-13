@@ -362,3 +362,6 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /invitations.db-shm
+FodyWeavers.xsd
+/wwwroot/generate_image
+/wwwroot/uploads

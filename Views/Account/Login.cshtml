@@ -139,6 +139,14 @@
                             </button>
                         </div>
                     </form>
+
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div class="alert alert-danger mt-3">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            @string.Join(", ", ViewData.ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage))
+                        </div>
+                    }
                 </div>
             </div>
         </div>

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TicketMaster.Data;
 
@@ -10,35 +11,14 @@ using TicketMaster.Data;
 namespace TicketMaster.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250813032136_create new table -user")]
+    partial class createnewtableuser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.8");
-
-            modelBuilder.Entity("TicketMaster.Models.ApplicationSetting", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("ColorCode")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("FontFamily")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("FrontSize")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ApplicationSettings");
-                });
 
             modelBuilder.Entity("TicketMaster.Models.Invitation", b =>
                 {
@@ -69,9 +49,11 @@ namespace TicketMaster.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.HasKey("Id");
+                    b.Property<string>("UserCategory")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
-                    b.HasIndex("Issued");
+                    b.HasKey("Id");
 
                     b.ToTable("Invitations");
                 });
@@ -100,35 +82,9 @@ namespace TicketMaster.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("IssuedUserCode")
-                        .HasColumnType("TEXT");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("IssuedUserCode");
-
                     b.ToTable("InvitationsWithPoint");
-                });
-
-            modelBuilder.Entity("TicketMaster.Models.Issued", b =>
-                {
-                    b.Property<string>("UserCode")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("UserCode");
-
-                    b.ToTable("Issueds");
                 });
 
             modelBuilder.Entity("TicketMaster.Models.User", b =>
@@ -157,22 +113,6 @@ namespace TicketMaster.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Users");
-                });
-
-            modelBuilder.Entity("TicketMaster.Models.Invitation", b =>
-                {
-                    b.HasOne("TicketMaster.Models.Issued", "IssuedUser")
-                        .WithMany("Invitations")
-                        .HasForeignKey("Issued")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("IssuedUser");
-                });
-
-            modelBuilder.Entity("TicketMaster.Models.Issued", b =>
-                {
-                    b.Navigation("Invitations");
                 });
 #pragma warning restore 612, 618
         }

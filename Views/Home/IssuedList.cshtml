@@ -180,8 +180,6 @@
 
 </div>
 
-
-
 @section Scripts {
     <script>
 
@@ -283,7 +281,7 @@
             rows.forEach(row => tbody.appendChild(row));
 
             // Show sort feedback
-            showToast(`Table sorted by ${['ID', 'Inviter Name', 'Issued Code', 'Invitation Type', 'Unique Code'][columnIndex]} (${sortDirection[columnIndex].toUpperCase()})`, 'info');
+            showToast(`Table sorted by ${['ID', 'Inviter Name', 'Issued Code', 'Invitation Type', 'Unique Code','Create At'][columnIndex]} (${sortDirection[columnIndex].toUpperCase()})`, 'info');
         }
 
         // Copy to clipboard
