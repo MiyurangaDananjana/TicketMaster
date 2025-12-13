@@ -9,7 +9,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     
     steps:
       - name: Checkout code
@@ -39,7 +39,7 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           password: ${{ secrets.VPS_PASSWORD }}
           source: "publish/*"
-          target: "C:/Apps/TicketMaster"
+          target: "/c/Apps/TicketMaster"
           strip_components: 1
       
       - name: Restart TicketMaster Service
