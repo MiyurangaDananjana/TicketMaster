@@ -104,11 +104,7 @@
                                 <span>Unique Code</span>
                                 <i class="fas fa-sort sort-icon"></i>
                             </th>
-                            <th onclick="sortTable(5)">
-                                <span>Category</span>
-                                <i class="fas fa-sort sort-icon"></i>
-                            </th>
-                           <th onclick="sortTable(6)">
+                           <th onclick="sortTable(5)">
                                 <span>Created At</span>
                                 <i class="fas fa-sort sort-icon"></i>
                             </th>
@@ -141,9 +137,6 @@
                                             <i class="fas fa-copy"></i>
                                         </button>
                                     </div>
-                                </td>
-                                <td class="table-cell">
-                                    <span>@item.UserCategory</span>
                                 </td>
                                 <!-- Inside your foreach loop for each row -->
                                 <td class="table-cell">
@@ -275,7 +268,7 @@
 
                 if (columnIndex === 0) { // ID numeric sort
                     comparison = parseInt(aValue.replace('#', '')) - parseInt(bValue.replace('#', ''));
-                } else if (columnIndex === 6) { // Created At date sort
+                } else if (columnIndex === 5) { // Created At date sort
                     comparison = new Date(aValue) - new Date(bValue);
                 } else {
                     comparison = aValue.localeCompare(bValue);
@@ -288,7 +281,7 @@
             rows.forEach(row => tbody.appendChild(row));
 
             // Show sort feedback
-            showToast(`Table sorted by ${['ID', 'Inviter Name', 'Issued Code', 'Invitation Type', 'Unique Code', 'Category', 'Create At'][columnIndex]} (${sortDirection[columnIndex].toUpperCase()})`, 'info');
+            showToast(`Table sorted by ${['ID', 'Inviter Name', 'Issued Code', 'Invitation Type', 'Unique Code','Create At'][columnIndex]} (${sortDirection[columnIndex].toUpperCase()})`, 'info');
         }
 
         // Copy to clipboard
