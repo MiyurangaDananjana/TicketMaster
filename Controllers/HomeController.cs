@@ -421,15 +421,6 @@ public class HomeController : Controller
             var color = System.Drawing.Color.FromArgb(128, System.Drawing.Color.White); // semi-transparent red
             var brush = new SolidBrush(color);
 
-            var text = "COPY";
-            var size = graphics.MeasureString(text, font);
-
-            // Draw watermark diagonally across the center
-            graphics.TranslateTransform(image.Width / 2, image.Height / 2);
-            graphics.RotateTransform(-30); // rotate text
-            graphics.DrawString(text, font, brush, -size.Width / 2, -size.Height / 2);
-            graphics.ResetTransform();
-
             // Save to memory stream for returning
             using (var ms = new MemoryStream())
             {
@@ -471,7 +462,6 @@ public class HomeController : Controller
                 worksheet.Cell(i + 2, 6).Value = inv.CreatedAt;
             }
 
-
             using (var stream = new MemoryStream())
             {
                 workbook.SaveAs(stream);
@@ -482,9 +472,8 @@ public class HomeController : Controller
                             fileName);
             }
         }
-
-
     }
+
     public IActionResult DownloadSqliteBackup()
     {
         var originalFilePath = Path.Combine(Directory.GetCurrentDirectory(), "invitations.db");
