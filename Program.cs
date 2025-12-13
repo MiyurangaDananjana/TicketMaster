@@ -31,15 +31,37 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+// Initialize database
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<ApplicationDbContext>();
+        context.Database.EnsureCreated(); // Creates database if it doesn't exist
+        // For production, use: await context.Database.MigrateAsync();
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred creating the DB.");
+    }
+}
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
 }
+else
+{
+    app.UseDeveloperExceptionPage();
+}
 app.UseStaticFiles();
 
 app.UseRouting();
 
+app.UseAuthentication();  // CRITICAL: Must come before UseAuthorization
 app.UseAuthorization();
 
 app.MapControllerRoute(

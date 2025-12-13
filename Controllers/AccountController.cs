@@ -5,6 +5,12 @@ using System.Security.Claims;
 
 public class AccountController : Controller
 {
+    private readonly ILogger<AccountController> _logger;
+
+    public AccountController(ILogger<AccountController> logger)
+    {
+        _logger = logger;
+    }
     [HttpGet]
     public IActionResult Login(string returnUrl = null)
     {
@@ -16,11 +22,21 @@ public class AccountController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Login(string email, string password, string returnUrl = null)
     {
+        _logger.LogInformation("Login POST called - Email: {Email}, ReturnUrl: {ReturnUrl}", email ?? "null", returnUrl ?? "null");
+
         ViewData["ReturnUrl"] = returnUrl;
+
+        if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
+        {
+            _logger.LogWarning("Login attempt with empty email or password");
+            ModelState.AddModelError("", "Email and password are required.");
+            return View();
+        }
 
         // TODO: Replace with your user validation logic
         if (IsValidUser(email, password))
         {
+            _logger.LogInformation("User validated successfully: {Email}", email);
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, email),
@@ -40,12 +56,19 @@ public class AccountController : Controller
                 new ClaimsPrincipal(claimsIdentity),
                 authProperties);
 
-            if (Url.IsLocalUrl(returnUrl))
-                return Redirect(returnUrl);
+            _logger.LogInformation("User signed in successfully: {Email}", email);
 
+            if (Url.IsLocalUrl(returnUrl))
+            {
+                _logger.LogInformation("Redirecting to return URL: {ReturnUrl}", returnUrl);
+                return Redirect(returnUrl);
+            }
+
+            _logger.LogInformation("Redirecting to Home/Index");
             return RedirectToAction("Index", "Home");
         }
 
+        _logger.LogWarning("Invalid login attempt for email: {Email}", email);
         ModelState.AddModelError("", "Invalid email or password.");
         return View();
     }
