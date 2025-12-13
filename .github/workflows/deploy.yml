@@ -15,15 +15,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Setup .NET 8
+      - name: Remove any global.json
+        run: rm -f global.json || true
+      
+      - name: Setup .NET 8.0.416 exclusively
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.416'
       
+      - name: Verify correct .NET version
+        run: |
+          dotnet --version
+          dotnet --list-sdks
+      
       - name: Restore dependencies
         run: dotnet restore
       
-      - name: Build
+      - name: Build Release
         run: dotnet build --configuration Release --no-restore
       
       - name: Publish
