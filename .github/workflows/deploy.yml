@@ -15,18 +15,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Remove any global.json
-        run: rm -f global.json || true
-      
-      - name: Setup .NET 8.0.416 exclusively
+      - name: Setup .NET 8
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.416'
       
-      - name: Verify correct .NET version
-        run: |
-          dotnet --version
-          dotnet --list-sdks
+      - name: Verify .NET version
+        run: dotnet --version
       
       - name: Restore dependencies
         run: dotnet restore
@@ -35,9 +30,9 @@ jobs:
         run: dotnet build --configuration Release --no-restore
       
       - name: Publish
-        run: dotnet publish -c Release -o ./publish
+        run: dotnet publish -c Release -o publish
       
-      - name: Copy to VPS
+      - name: Deploy to VPS
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -45,17 +40,15 @@ jobs:
           password: ${{ secrets.VPS_PASSWORD }}
           source: "publish/*"
           target: "/c/Apps/TicketMaster"
-          strip_prefix: "publish/"
+          strip_components: 1
       
-      - name: Restart Application
+      - name: Restart TicketMaster Service
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
           password: ${{ secrets.VPS_PASSWORD }}
-          script: |
-            nssm restart TicketMasterService
-            exit 0
+          script: nssm restart TicketMasterService
 
-      - name: Deployment Success
-        run: echo "TicketMaster deployed successfully to VPS!"
+      - name: Deployment Complete
+        run: echo "TicketMaster deployed successfully!"
