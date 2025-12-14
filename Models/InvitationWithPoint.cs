@@ -18,5 +18,8 @@ namespace TicketMaster.Models
 
         // Optional: Invitation Type or prefix (if needed)
         public string InvitationType { get; set; }
+
+        // Active/Inactive status for the image template
+        public bool IsActive { get; set; } = true;
     }
 }

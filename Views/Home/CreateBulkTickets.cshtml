@@ -1,0 +1,236 @@
+@model BulkTicketCreateDTO
+@{
+    ViewData["Title"] = "Create Bulk Tickets";
+    var evt = ViewBag.Event as Event;
+    var remainingTickets = ViewBag.RemainingTickets as int?;
+    var images = ViewBag.Images as List<ImagesDTO>;
+}
+
+<link rel="stylesheet" href="~/css/invitation-styles.css" />
+
+<div class="invitation-container">
+    <div class="header-section">
+        <h2 class="page-title">Create Tickets: @evt.EventName</h2>
+        <p class="page-subtitle">
+            Event Date: @evt.EventDate.ToString("MMMM dd, yyyy") |
+            <strong>Available: @remainingTickets / @evt.MaxTickets tickets</strong>
+        </p>
+    </div>
+
+    <form asp-action="CreateBulkTickets" method="post" class="invitation-form">
+        <input type="hidden" name="EventId" value="@evt.Id" />
+
+        <!-- Quantity Selector Section -->
+        <div class="form-section">
+            <h4 class="section-title">How Many Tickets?</h4>
+            <div class="quantity-selector-container">
+                <button type="button" class="qty-btn" onclick="adjustQuantity(-10)">-10</button>
+                <button type="button" class="qty-btn" onclick="adjustQuantity(-1)">-1</button>
+                <input type="number" id="Quantity" name="Quantity" class="quantity-input"
+                       min="1" max="@remainingTickets" value="1" required />
+                <button type="button" class="qty-btn" onclick="adjustQuantity(1)">+1</button>
+                <button type="button" class="qty-btn" onclick="adjustQuantity(10)">+10</button>
+            </div>
+            <small class="form-text">Maximum: @remainingTickets tickets</small>
+        </div>
+
+        <!-- Template Selection Section -->
+        <div class="form-section">
+            <h4 class="section-title">Choose Design Template</h4>
+            <div class="image-selection">
+                @if (images != null && images.Any())
+                {
+                    @foreach (var img in images)
+                    {
+                        <label class="image-option">
+                            <input type="radio" name="InvitationType" value="@img.Value" hidden required />
+                            <div class="image-wrapper">
+                                <img src="@img.Path" class="selectable-img" alt="Template" />
+                                <span style="margin: 8px; text-align: center; font-weight: 500; font-size: 0.9rem; color: #333;">
+                                    @img.Value
+                                </span>
+                                <div class="selection-overlay">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                            </div>
+                        </label>
+                    }
+                }
+                else
+                {
+                    <div class="d-flex align-items-center" role="alert" style="gap: 10px;">
+                        <img src="~/images/empty-box.png" alt="No templates found" style="width:40px; height:40px;" />
+                        <span>Sorry, no design templates were found.</span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Invitation Details Section -->
+        <div class="form-section">
+            <h4 class="section-title">Invitation Details</h4>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="Issued" class="form-label">
+                        <i class="fas fa-user"></i> Select Issuer
+                    </label>
+                    <select class="form-control" id="Issued" name="Issued" required>
+                        <option value="">-- Select Issuer --</option>
+                        @foreach (var item in ViewBag.IssuedCodes)
+                        {
+                            <option value="@item.UserCode">@item.Name</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="InviterName" class="form-label">
+                        <i class="fas fa-signature"></i> Inviter Name
+                    </label>
+                    <input type="text" class="form-control" id="InviterName" name="InviterName"
+                           required placeholder="Enter inviter name" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="form-actions">
+            <button type="submit" class="btn btn-generate">
+                <i class="fas fa-magic"></i> Generate <span id="quantityDisplay">1</span> Ticket(s)
+            </button>
+            <a href="@Url.Action("ManageEvents")" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Events
+            </a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        function adjustQuantity(delta) {
+            const input = document.getElementById('Quantity');
+            const max = parseInt(input.max);
+            let newValue = parseInt(input.value || 0) + delta;
+
+            if (newValue < 1) newValue = 1;
+            if (newValue > max) newValue = max;
+
+            input.value = newValue;
+            updateQuantityDisplay();
+        }
+
+        function updateQuantityDisplay() {
+            const quantity = document.getElementById('Quantity').value;
+            document.getElementById('quantityDisplay').textContent = quantity;
+        }
+
+        document.getElementById('Quantity').addEventListener('input', updateQuantityDisplay);
+
+        // Initialize display
+        updateQuantityDisplay();
+    </script>
+}
+
+<style>
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+    }
+
+    .quantity-selector-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        padding: 1.5rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+
+    .qty-btn {
+        padding: 12px 20px;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 16px;
+        transition: all 0.3s ease;
+    }
+
+    .qty-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+    }
+
+    .qty-btn:active {
+        transform: translateY(0);
+    }
+
+    .quantity-input {
+        width: 120px;
+        padding: 12px;
+        font-size: 24px;
+        font-weight: bold;
+        text-align: center;
+        border: 2px solid #6366f1;
+        border-radius: 8px;
+        background: white;
+    }
+
+    .quantity-input:focus {
+        outline: none;
+        border-color: #8b5cf6;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .form-text {
+        display: block;
+        text-align: center;
+        margin-top: 0.5rem;
+        color: #6c757d;
+    }
+
+    .btn-secondary {
+        background: linear-gradient(135deg, #6c757d, #5a6268);
+        color: white;
+        padding: 12px 32px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .btn-secondary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    @@media (max-width: 768px) {
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .quantity-selector-container {
+            flex-wrap: wrap;
+        }
+
+        .quantity-input {
+            width: 100%;
+        }
+    }
+</style>

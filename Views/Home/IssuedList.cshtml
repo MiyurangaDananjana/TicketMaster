@@ -144,9 +144,14 @@
                                 </td>
                                 <td class="table-cell">
                                     <div class="action-buttons">
-
+                                        <a href="@Url.Action("Details", "Home", new { id = item.Id })" class="btn-small btn-info" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
                                         <button type="button" class="btn-small btn-download" onclick="downloadInvitation(@item.Id)" title="Download">
                                             <i class="fas fa-download"></i>
+                                        </button>
+                                        <button type="button" class="btn-small btn-danger" onclick="deleteInvitation(@item.Id, '@item.UniqCode')" title="Delete">
+                                            <i class="fas fa-trash"></i>
                                         </button>
                                     </div>
                                 </td>
@@ -174,6 +179,9 @@
         <div class="export-buttons mb-3">
             <a href="@Url.Action("ExportExcel", "Home")" class="btn btn-success me-2">
                 <i class="fas fa-file-excel"></i> Download All Invitations as Excel
+            </a>
+            <a href="@Url.Action("DeletedInvitations", "Home")" class="btn btn-secondary">
+                <i class="fas fa-trash-restore"></i> View Deleted Invitations
             </a>
         </div>
     </div>
@@ -311,6 +319,25 @@
             setTimeout(() => {
                 window.location.href = `@Url.Action("Download", "Home")/${id}`;
             }, 500);
+        }
+
+        // Delete invitation
+        function deleteInvitation(id, code) {
+            if (confirm(`Are you sure you want to delete invitation "${code}"?\n\nThe invitation will be moved to trash and can be restored later.`)) {
+                // Create a form and submit it
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '@Url.Action("DeleteInvitation", "Home")';
+
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'id';
+                input.value = id;
+
+                form.appendChild(input);
+                document.body.appendChild(form);
+                form.submit();
+            }
         }
 
         // Toast notification with enhanced functionality

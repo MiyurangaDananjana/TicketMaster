@@ -1,0 +1,125 @@
+@model Event
+@{
+    ViewData["Title"] = "Create Event";
+}
+
+<link rel="stylesheet" href="~/css/invitation-styles.css" />
+
+<div class="invitation-container">
+    <div class="header-section">
+        <h2 class="page-title">Create New Event</h2>
+        <p class="page-subtitle">Set up a new event for bulk ticket creation</p>
+    </div>
+
+    <form asp-action="CreateEvent" method="post" enctype="multipart/form-data" class="invitation-form">
+        <div class="form-section">
+            <h4 class="section-title">Event Details</h4>
+
+            <div class="form-group">
+                <label asp-for="EventName" class="form-label">
+                    <i class="fas fa-tag"></i> Event Name
+                </label>
+                <input asp-for="EventName" class="form-control" placeholder="e.g., Christmas Party 2025" required />
+                <span asp-validation-for="EventName" class="text-danger"></span>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label asp-for="EventDate" class="form-label">
+                        <i class="fas fa-calendar"></i> Event Date
+                    </label>
+                    <input asp-for="EventDate" type="date" class="form-control" required />
+                    <span asp-validation-for="EventDate" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="MaxTickets" class="form-label">
+                        <i class="fas fa-hashtag"></i> Maximum Tickets
+                    </label>
+                    <input asp-for="MaxTickets" type="number" class="form-control" min="1" max="10000" placeholder="e.g., 200" required />
+                    <span asp-validation-for="MaxTickets" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Description" class="form-label">
+                    <i class="fas fa-align-left"></i> Description (Optional)
+                </label>
+                <textarea asp-for="Description" class="form-control" rows="3" placeholder="Event details..."></textarea>
+                <span asp-validation-for="Description" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="eventImage" class="form-label">
+                    <i class="fas fa-image"></i> Event Image (Optional)
+                </label>
+                <input type="file" id="eventImage" name="eventImage" class="form-control" accept="image/*" />
+                <small class="form-text text-muted">
+                    <i class="fas fa-info-circle"></i>
+                    Upload an image for this event (JPG, PNG, etc.)
+                </small>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-generate">
+                <i class="fas fa-save"></i> Create Event
+            </button>
+            <a href="@Url.Action("ManageEvents")" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Cancel
+            </a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
+
+<style>
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+    }
+
+    .btn-secondary {
+        background: linear-gradient(135deg, #6c757d, #5a6268);
+        color: white;
+        padding: 12px 32px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .btn-secondary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    .text-danger {
+        color: #dc3545;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+        display: block;
+    }
+
+    @@media (max-width: 768px) {
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>

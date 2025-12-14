@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TicketMaster.Data;
 
@@ -10,9 +11,11 @@ using TicketMaster.Data;
 namespace TicketMaster.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251213214736_AddEventSupport")]
+    partial class AddEventSupport
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.11");
@@ -62,9 +65,6 @@ namespace TicketMaster.Migrations
                     b.Property<string>("EventName")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("ImagePath")
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsActive")
@@ -144,9 +144,6 @@ namespace TicketMaster.Migrations
                     b.Property<string>("InvitationType")
                         .IsRequired()
                         .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Issued")
                         .IsRequired()

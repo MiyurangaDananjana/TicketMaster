@@ -12,9 +12,15 @@
         public string UniqCode { get; set; }
         public string ImagePath { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public bool IsDeleted { get; set; } = false;
+        public DateTime? DeletedAt { get; set; }
 
-        // Navigation property
+        // Foreign Key → Event.Id (nullable for backward compatibility)
+        public int? EventId { get; set; }
+
+        // Navigation properties
         public Issued IssuedUser { get; set; }
+        public Event? Event { get; set; }
 
     }
 }

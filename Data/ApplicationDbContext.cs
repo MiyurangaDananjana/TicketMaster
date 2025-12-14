@@ -21,6 +21,8 @@ namespace TicketMaster.Data
 
         public DbSet<Issued> Issueds { get; set; }
 
+        public DbSet<Event> Events { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -36,6 +38,13 @@ namespace TicketMaster.Data
                 .HasForeignKey(i => i.Issued)            // FK in Invitation
                 .HasPrincipalKey(u => u.UserCode)        // PK in Issued
                 .OnDelete(DeleteBehavior.Cascade);       // Cascade delete
+
+            // Event → Invitation (one-to-many)
+            modelBuilder.Entity<Invitation>()
+                .HasOne(i => i.Event)
+                .WithMany(e => e.Invitations)
+                .HasForeignKey(i => i.EventId)
+                .OnDelete(DeleteBehavior.SetNull);       // Don't cascade delete tickets when event deleted
 
         }
 

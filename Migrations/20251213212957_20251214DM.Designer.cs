@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TicketMaster.Data;
 
@@ -10,9 +11,11 @@ using TicketMaster.Data;
 namespace TicketMaster.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251213212957_20251214DM")]
+    partial class _20251214DM
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.11");
@@ -40,44 +43,6 @@ namespace TicketMaster.Migrations
                     b.ToTable("ApplicationSettings");
                 });
 
-            modelBuilder.Entity("TicketMaster.Models.Event", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("CreatedTicketsCount")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("EventDate")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("EventName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("ImagePath")
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("MaxTickets")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Events");
-                });
-
             modelBuilder.Entity("TicketMaster.Models.Invitation", b =>
                 {
                     b.Property<int>("Id")
@@ -89,9 +54,6 @@ namespace TicketMaster.Migrations
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("TEXT");
-
-                    b.Property<int?>("EventId")
-                        .HasColumnType("INTEGER");
 
                     b.Property<string>("ImagePath")
                         .IsRequired()
@@ -118,8 +80,6 @@ namespace TicketMaster.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("EventId");
-
                     b.HasIndex("Issued");
 
                     b.ToTable("Invitations");
@@ -144,9 +104,6 @@ namespace TicketMaster.Migrations
                     b.Property<string>("InvitationType")
                         .IsRequired()
                         .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Issued")
                         .IsRequired()
@@ -208,25 +165,13 @@ namespace TicketMaster.Migrations
 
             modelBuilder.Entity("TicketMaster.Models.Invitation", b =>
                 {
-                    b.HasOne("TicketMaster.Models.Event", "Event")
-                        .WithMany("Invitations")
-                        .HasForeignKey("EventId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("TicketMaster.Models.Issued", "IssuedUser")
                         .WithMany("Invitations")
                         .HasForeignKey("Issued")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Event");
-
                     b.Navigation("IssuedUser");
-                });
-
-            modelBuilder.Entity("TicketMaster.Models.Event", b =>
-                {
-                    b.Navigation("Invitations");
                 });
 
             modelBuilder.Entity("TicketMaster.Models.Issued", b =>

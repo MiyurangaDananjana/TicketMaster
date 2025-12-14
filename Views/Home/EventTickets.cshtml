@@ -1,0 +1,261 @@
+@model IEnumerable<Invitation>
+@{
+    ViewData["Title"] = "Event Tickets";
+    var evt = ViewBag.Event as Event;
+}
+
+<link rel="stylesheet" href="~/css/invitation-styles.css" />
+
+<div class="invitation-container">
+    <div class="header-section">
+        <h2 class="page-title">@evt.EventName - Tickets</h2>
+        <p class="page-subtitle">
+            Event Date: @evt.EventDate.ToString("MMMM dd, yyyy") |
+            <strong>@Model.Count() tickets created</strong> out of @evt.MaxTickets maximum
+        </p>
+    </div>
+
+    <div class="invitation-form">
+        <!-- Stats Section -->
+        <div class="form-section">
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-ticket-alt"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-number">@Model.Count()</h3>
+                        <p class="stat-label">Total Tickets</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-number">@Model.Select(x => x.InviterName).Distinct().Count()</h3>
+                        <p class="stat-label">Unique Inviters</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-number">@(evt.MaxTickets - evt.CreatedTicketsCount)</h3>
+                        <p class="stat-label">Remaining</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tickets Table Section -->
+        <div class="form-section">
+            <h4 class="section-title">Ticket List</h4>
+            <div class="table-responsive">
+                <table class="invitation-table">
+                    <thead class="table-header">
+                        <tr>
+                            <th>ID</th>
+                            <th>Inviter Name</th>
+                            <th>Unique Code</th>
+                            <th>Issued By</th>
+                            <th>Created At</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Any())
+                        {
+                            @foreach (var ticket in Model)
+                            {
+                                <tr>
+                                    <td><strong>#@ticket.Id</strong></td>
+                                    <td>@ticket.InviterName</td>
+                                    <td>
+                                        <div class="unique-code">
+                                            <span class="code-text">@ticket.UniqCode</span>
+                                            <button type="button" class="copy-btn" onclick="copyToClipboard('@ticket.UniqCode')" title="Copy code">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                    <td>@ticket.Issued</td>
+                                    <td>@ticket.CreatedAt.ToString("MMM dd, yyyy HH:mm")</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <a href="@Url.Action("Details", new { id = ticket.Id })" class="btn-small btn-info" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="@ticket.ImagePath" download="@ticket.UniqCode" class="btn-small btn-download" title="Download">
+                                                <i class="fas fa-download"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center" style="padding: 2rem;">
+                                    <i class="fas fa-ticket-alt" style="font-size: 3rem; color: #ccc;"></i>
+                                    <p style="margin-top: 1rem; color: #666;">No tickets found for this event.</p>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="form-actions">
+            @if (evt.MaxTickets - evt.CreatedTicketsCount > 0)
+            {
+                <a href="@Url.Action("CreateBulkTickets", new { eventId = evt.Id })" class="btn btn-generate">
+                    <i class="fas fa-plus"></i> Add More Tickets
+                </a>
+            }
+            else
+            {
+                <button class="btn btn-disabled" disabled>
+                    <i class="fas fa-ban"></i> Maximum Tickets Reached
+                </button>
+            }
+            <a href="@Url.Action("ManageEvents")" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Events
+            </a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function () {
+                // Show success feedback
+                alert('Code copied to clipboard: ' + text);
+            }, function (err) {
+                console.error('Could not copy text: ', err);
+            });
+        }
+    </script>
+}
+
+<style>
+    .unique-code {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .code-text {
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        color: #6366f1;
+    }
+
+    .copy-btn {
+        background: #f0f0f0;
+        border: none;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .copy-btn:hover {
+        background: #6366f1;
+        color: white;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .btn-small {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .btn-info {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        color: white;
+    }
+
+    .btn-info:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+
+    .btn-download {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+    }
+
+    .btn-download:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    }
+
+    .btn-secondary {
+        background: linear-gradient(135deg, #6c757d, #5a6268);
+        color: white;
+        padding: 12px 32px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .btn-secondary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+    }
+
+    .btn-disabled {
+        background: #ccc;
+        color: #666;
+        padding: 12px 32px;
+        border: none;
+        border-radius: 8px;
+        cursor: not-allowed;
+        font-size: 16px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    .text-center {
+        text-align: center;
+    }
+
+    @@media (max-width: 768px) {
+        .action-buttons {
+            flex-direction: column;
+        }
+    }
+</style>

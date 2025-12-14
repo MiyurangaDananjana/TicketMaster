@@ -39,19 +39,20 @@
                                         <tr>
                                             <th style="width: 80px;">Preview</th>
                                             <th>Invitation Type</th>
-                                            <th style="width: 100px;">Action</th>  <!-- Fixed width for action -->
+                                            <th style="width: 120px;">Status</th>
+                                            <th style="width: 150px;">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @foreach (var image in Model)
                                         {
-                                            <tr>
+                                            <tr class="@(image.IsActive ? "" : "table-secondary")">
                                                 <td>
                                                     @if (!string.IsNullOrEmpty(image.ImagePath))
                                                     {
                                                         <img src="@image.ImagePath"
                                                              alt="Preview"
-                                                             class="img-thumbnail"
+                                                             class="img-thumbnail @(image.IsActive ? "" : "opacity-50")"
                                                              style="width: 60px; height: 60px; object-fit: cover;"
                                                              onerror="this.src='/images/no-image.png'">
                                                     }
@@ -67,24 +68,36 @@
                                                     <span>@image.Issued</span>
                                                 </td>
                                                 <td class="align-middle">
-                                                    @if (image.InvitationType == "True")
+                                                    @if (image.IsActive)
                                                     {
-                                                        <a href="@Url.Action("DisableImage", "Home", new { issuedCode = image.Issued })"
-                                                           class="btn btn-success btn-xs" style="font-size: 0.7rem; padding: 5px 12px;"
-                                                           title="Click to deactivate this image">
-                                                            <i class="fas fa-toggle-on"></i> Activated
-                                                        </a>
+                                                        <span class="badge bg-success">
+                                                            <i class="fas fa-check-circle me-1"></i>Active
+                                                        </span>
                                                     }
                                                     else
                                                     {
-                                                        <a href="@Url.Action("EnableImage", "Home", new { issuedCode = image.Issued })"
-                                                           class="btn btn-danger btn-xs" style="font-size: 0.7rem; padding: 5px 12px;"
-                                                           title="Click to activate this image">
-                                                            <i class="fas fa-toggle-off"></i> Deactivated
-                                                        </a>
+                                                        <span class="badge bg-secondary">
+                                                            <i class="fas fa-times-circle me-1"></i>Inactive
+                                                        </span>
                                                     }
                                                 </td>
-
+                                                <td class="align-middle">
+                                                    <form method="post" action="@Url.Action("ToggleImageStatus", "Home")" style="display: inline;">
+                                                        <input type="hidden" name="imageId" value="@image.Id" />
+                                                        @if (image.IsActive)
+                                                        {
+                                                            <button type="submit" class="btn btn-sm btn-warning" title="Deactivate">
+                                                                <i class="fas fa-toggle-on me-1"></i>Deactivate
+                                                            </button>
+                                                        }
+                                                        else
+                                                        {
+                                                            <button type="submit" class="btn btn-sm btn-success" title="Activate">
+                                                                <i class="fas fa-toggle-off me-1"></i>Activate
+                                                            </button>
+                                                        }
+                                                    </form>
+                                                </td>
                                             </tr>
                                         }
                                     </tbody>

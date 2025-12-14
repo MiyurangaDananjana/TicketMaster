@@ -98,6 +98,30 @@
                 </label>
                 <input type="text" class="form-control" id="InviterName" name="InviterName" required placeholder="Enter your name" />
             </div>
+
+            <div class="form-group">
+                <label for="EventId" class="form-label">
+                    <i class="fas fa-calendar-alt"></i>
+                    Select Event (Optional)
+                </label>
+                <select class="form-control" id="EventId" name="EventId">
+                    <option value="">-- No Event (Individual Ticket) --</option>
+                    @if (ViewBag.Events != null)
+                    {
+                        @foreach (var evt in ViewBag.Events)
+                        {
+                            var remaining = evt.MaxTickets - evt.CreatedTicketsCount;
+                            <option value="@evt.Id">
+                                @evt.EventName - @evt.EventDate.ToString("MMM dd, yyyy") (@remaining tickets remaining)
+                            </option>
+                        }
+                    }
+                </select>
+                <small class="form-text text-muted">
+                    <i class="fas fa-info-circle"></i>
+                    Optionally associate this ticket with an event
+                </small>
+            </div>
         </div>
 
         <!-- Submit Button -->

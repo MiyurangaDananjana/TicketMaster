@@ -12,11 +12,13 @@ public class HomeController : Controller
 {
     private readonly ApplicationDbContext _context;
     private readonly IWebHostEnvironment _env;
+    private readonly ILogger<HomeController> _logger;
 
-    public HomeController(ApplicationDbContext context, IWebHostEnvironment env)
+    public HomeController(ApplicationDbContext context, IWebHostEnvironment env, ILogger<HomeController> logger)
     {
         _context = context;
         _env = env;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -42,7 +44,7 @@ public class HomeController : Controller
         }
 
         var imageDetails = _context.InvitationsWithPoint
-            .Where(i => i.InvitationType == "True")
+            .Where(i => i.InvitationType == "True" && i.IsActive)
             .Select(i => new ImagesDTO
             {
                 Value = i.Issued,
@@ -52,6 +54,12 @@ public class HomeController : Controller
 
 
         ViewBag.IssuedCodes = _context.Issueds.Where(x => x.Status == "True").ToList();
+
+        // Load active events for event selection
+        ViewBag.Events = _context.Events
+            .Where(e => e.IsActive && (e.MaxTickets - e.CreatedTicketsCount) > 0)
+            .OrderByDescending(e => e.EventDate)
+            .ToList();
 
         InvitationDTO invitationDTO = new InvitationDTO
         {
@@ -88,12 +96,31 @@ public class HomeController : Controller
 
         if (string.IsNullOrEmpty(imagePath))
         {
-            TempData["ErrorMessage"] = "Failed to generate the invitation image. Please try again.";
+            _logger.LogWarning("Failed to generate invitation image for InvitationType: {InvitationType}, Code: {Code}", model.InvitationType, code);
+            TempData["ErrorMessage"] = "Failed to generate the invitation image. Please ensure application settings are configured and the template image exists.";
             return RedirectToAction("Index");
         }
 
         try
         {
+            // Validate event capacity if event is selected
+            if (model.EventId.HasValue)
+            {
+                var evt = _context.Events.Find(model.EventId.Value);
+                if (evt == null)
+                {
+                    TempData["ErrorMessage"] = "Selected event not found.";
+                    return RedirectToAction("Index");
+                }
+
+                int remainingTickets = evt.MaxTickets - evt.CreatedTicketsCount;
+                if (remainingTickets <= 0)
+                {
+                    TempData["ErrorMessage"] = $"Cannot create ticket. Event '{evt.EventName}' has reached maximum capacity.";
+                    return RedirectToAction("Index");
+                }
+            }
+
             Invitation invitation = new Invitation
             {
                 InviterName = model.InviterName,
@@ -102,9 +129,22 @@ public class HomeController : Controller
                 UniqCode = code,
                 ImagePath = imagePath,
                 CreatedAt = DateTime.Now,
+                EventId = model.EventId
             };
 
             _context.Invitations.Add(invitation);
+
+            // Update event ticket count if event is selected
+            if (model.EventId.HasValue)
+            {
+                var evt = _context.Events.Find(model.EventId.Value);
+                if (evt != null)
+                {
+                    evt.CreatedTicketsCount += 1;
+                    _context.Events.Update(evt);
+                }
+            }
+
             _context.SaveChanges();
 
             TempData["SuccessMessage"] = "Invitation saved successfully!";
@@ -112,8 +152,9 @@ public class HomeController : Controller
         }
         catch (Exception ex)
         {
-            // Log the exception as needed
-            TempData["ErrorMessage"] = "An error occurred while saving the invitation. Please try again.";
+            _logger.LogError(ex, "Error occurred while saving invitation. InviterName: {InviterName}, InvitationType: {InvitationType}, Issued: {Issued}",
+                model.InviterName, model.InvitationType, model.Issued);
+            TempData["ErrorMessage"] = $"An error occurred while saving the invitation: {ex.Message}";
         }
 
         TempData["GeneratedCode"] = code;
@@ -135,7 +176,10 @@ public class HomeController : Controller
             .FirstOrDefault();
 
         if (imageDetail == null)
+        {
+            _logger.LogWarning("No template image found for InvitationType: {InvitationType}", invitationType);
             return null;
+        }
 
         try
         {
@@ -143,10 +187,19 @@ public class HomeController : Controller
 
             var existingSettings = _context.ApplicationSettings.FirstOrDefault();
 
+            if (existingSettings == null)
+            {
+                _logger.LogError("ApplicationSettings not found in database. Please configure application settings.");
+                return null;
+            }
+
             float fontSize = ParseFontSize(existingSettings.FrontSize);
 
             if (!System.IO.File.Exists(originalFilePath))
+            {
+                _logger.LogError("Template image file not found at path: {FilePath}", originalFilePath);
                 return null;
+            }
 
             // Define the folder to save new generated images
             var generateImageFolder = Path.Combine(_env.WebRootPath, "generate_image");
@@ -178,8 +231,9 @@ public class HomeController : Controller
             string relativeUrl = "/generate_image/" + newFileName;
             return relativeUrl;
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Error generating and saving image for InvitationType: {InvitationType}, Code: {Code}", invitationType, code);
             return null;
         }
     }
@@ -255,10 +309,106 @@ public class HomeController : Controller
 
     public IActionResult IssuedList()
     {
-        var invitations = _context.Invitations.ToList();
+        var invitations = _context.Invitations
+            .Where(i => !i.IsDeleted)
+            .OrderByDescending(i => i.CreatedAt)
+            .ToList();
         return View(invitations);
     }
 
+    [HttpPost]
+    public IActionResult DeleteInvitation(int id)
+    {
+        try
+        {
+            var invitation = _context.Invitations.FirstOrDefault(i => i.Id == id);
+            if (invitation == null)
+            {
+                TempData["ErrorMessage"] = "Invitation not found.";
+                return RedirectToAction("IssuedList");
+            }
+
+            // Soft delete - don't delete the image file
+            invitation.IsDeleted = true;
+            invitation.DeletedAt = DateTime.UtcNow;
+            _context.SaveChanges();
+
+            _logger.LogInformation("Invitation {Id} ({UniqCode}) soft deleted successfully", id, invitation.UniqCode);
+            TempData["SuccessMessage"] = $"Invitation '{invitation.UniqCode}' deleted successfully.";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting invitation {Id}", id);
+            TempData["ErrorMessage"] = "An error occurred while deleting the invitation.";
+        }
+
+        return RedirectToAction("IssuedList");
+    }
+
+    public IActionResult DeletedInvitations()
+    {
+        var deletedInvitations = _context.Invitations
+            .Where(i => i.IsDeleted)
+            .OrderByDescending(i => i.DeletedAt)
+            .ToList();
+        return View(deletedInvitations);
+    }
+
+    [HttpPost]
+    public IActionResult RestoreInvitation(int id)
+    {
+        try
+        {
+            var invitation = _context.Invitations.FirstOrDefault(i => i.Id == id);
+            if (invitation == null)
+            {
+                TempData["ErrorMessage"] = "Invitation not found.";
+                return RedirectToAction("DeletedInvitations");
+            }
+
+            invitation.IsDeleted = false;
+            invitation.DeletedAt = null;
+            _context.SaveChanges();
+
+            _logger.LogInformation("Invitation {Id} ({UniqCode}) restored successfully", id, invitation.UniqCode);
+            TempData["SuccessMessage"] = $"Invitation '{invitation.UniqCode}' restored successfully.";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error restoring invitation {Id}", id);
+            TempData["ErrorMessage"] = "An error occurred while restoring the invitation.";
+        }
+
+        return RedirectToAction("DeletedInvitations");
+    }
+
+    [HttpPost]
+    public IActionResult PermanentDeleteInvitation(int id)
+    {
+        try
+        {
+            var invitation = _context.Invitations.FirstOrDefault(i => i.Id == id);
+            if (invitation == null)
+            {
+                TempData["ErrorMessage"] = "Invitation not found.";
+                return RedirectToAction("DeletedInvitations");
+            }
+
+            // Permanent delete - remove from database but still don't delete the image file
+            _context.Invitations.Remove(invitation);
+            _context.SaveChanges();
+
+            _logger.LogInformation("Invitation {Id} ({UniqCode}) permanently deleted", id, invitation.UniqCode);
+            TempData["SuccessMessage"] = "Invitation permanently deleted.";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error permanently deleting invitation {Id}", id);
+            TempData["ErrorMessage"] = "An error occurred while permanently deleting the invitation.";
+        }
+
+        return RedirectToAction("DeletedInvitations");
+    }
 
     public IActionResult SelectPoint()
     {
@@ -305,7 +455,8 @@ public class HomeController : Controller
             ImagePath = "/uploads/" + fileName,
             CoordinateX = CoordinateX,
             CoordinateY = CoordinateY,
-            InvitationType = "True"
+            InvitationType = "True",
+            IsActive = true
         };
 
         _context.InvitationsWithPoint.Add(InvitationWithPoint);
@@ -327,47 +478,6 @@ public class HomeController : Controller
         return View(invitations);
     }
 
-    public IActionResult DisableImage(string issuedCode)
-    {
-        if (issuedCode != null)
-        {
-            var invitation = _context.InvitationsWithPoint.FirstOrDefault(i => i.Issued == issuedCode);
-
-            if (invitation != null)
-            {
-                invitation.InvitationType = "False";
-                _context.SaveChanges();
-                TempData["AlertMessage"] = "Image deactivated successfully.";
-                TempData["AlertType"] = "danger";
-                return RedirectToAction("ManageDesing");
-            }
-        }
-
-        TempData["AlertMessage"] = "Failed to deactivate image.";
-        TempData["AlertType"] = "warning";
-        return RedirectToAction("ManageDesing");
-    }
-
-    public IActionResult EnableImage(string issuedCode)
-    {
-        if (issuedCode != null)
-        {
-            var invitation = _context.InvitationsWithPoint.FirstOrDefault(i => i.Issued == issuedCode);
-
-            if (invitation != null)
-            {
-                invitation.InvitationType = "True";
-                _context.SaveChanges();
-                TempData["AlertMessage"] = "Image activated successfully.";
-                TempData["AlertType"] = "success"; // For Bootstrap alert-success
-                return RedirectToAction("ManageDesing");
-            }
-        }
-
-        TempData["AlertMessage"] = "Failed to activate image.";
-        TempData["AlertType"] = "warning";
-        return RedirectToAction("ManageDesing");
-    }
 
     // GET: /Home/Details/5
     [HttpGet]
@@ -728,5 +838,280 @@ public class HomeController : Controller
         {
             return Json(new { success = false, message = "An error occurred." });
         }
+    }
+
+    // ==================== EVENT MANAGEMENT ACTIONS ====================
+
+    public IActionResult ManageEvents()
+    {
+        try
+        {
+            var events = _context.Events
+                .Select(e => new EventDTO
+                {
+                    Id = e.Id,
+                    EventName = e.EventName,
+                    EventDate = e.EventDate,
+                    Description = e.Description,
+                    MaxTickets = e.MaxTickets,
+                    CreatedTicketsCount = e.Invitations.Count(i => !i.IsDeleted),
+                    ImagePath = e.ImagePath,
+                    IsActive = e.IsActive
+                })
+                .OrderByDescending(e => e.EventDate)
+                .ToList();
+
+            return View(events);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading events");
+            TempData["ErrorMessage"] = "An error occurred while loading events.";
+            return View(new List<EventDTO>());
+        }
+    }
+
+    [HttpGet]
+    public IActionResult CreateEvent()
+    {
+        return View();
+    }
+
+    [HttpPost]
+    public IActionResult CreateEvent(Event model, IFormFile? eventImage)
+    {
+        if (ModelState.IsValid)
+        {
+            try
+            {
+                // Handle image upload
+                if (eventImage != null && eventImage.Length > 0)
+                {
+                    var uploadsFolder = Path.Combine(_env.WebRootPath, "event_images");
+                    if (!Directory.Exists(uploadsFolder))
+                        Directory.CreateDirectory(uploadsFolder);
+
+                    var uniqueFileName = $"{Guid.NewGuid()}_{eventImage.FileName}";
+                    var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                    using (var fileStream = new FileStream(filePath, FileMode.Create))
+                    {
+                        eventImage.CopyTo(fileStream);
+                    }
+
+                    model.ImagePath = "/event_images/" + uniqueFileName;
+                }
+
+                model.CreatedAt = DateTime.UtcNow;
+                model.CreatedTicketsCount = 0;
+                model.IsActive = true;
+
+                _context.Events.Add(model);
+                _context.SaveChanges();
+
+                TempData["SuccessMessage"] = $"Event '{model.EventName}' created successfully!";
+                return RedirectToAction("ManageEvents");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating event");
+                TempData["ErrorMessage"] = "An error occurred while creating the event.";
+            }
+        }
+
+        return View(model);
+    }
+
+    [HttpGet]
+    public IActionResult CreateBulkTickets(int eventId)
+    {
+        var evt = _context.Events.Find(eventId);
+        if (evt == null)
+        {
+            TempData["ErrorMessage"] = "Event not found.";
+            return RedirectToAction("ManageEvents");
+        }
+
+        ViewBag.Event = evt;
+        ViewBag.RemainingTickets = evt.MaxTickets - evt.CreatedTicketsCount;
+        ViewBag.IssuedCodes = _context.Issueds.Where(x => x.Status == "True").ToList();
+
+        var imageDetails = _context.InvitationsWithPoint
+            .Where(i => i.InvitationType == "True" && i.IsActive)
+            .Select(i => new ImagesDTO { Value = i.Issued, Path = i.ImagePath })
+            .ToList();
+
+        ViewBag.Images = imageDetails;
+
+        return View(new BulkTicketCreateDTO { EventId = eventId });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> CreateBulkTickets(BulkTicketCreateDTO model)
+    {
+        var evt = _context.Events.Find(model.EventId);
+        if (evt == null)
+        {
+            TempData["ErrorMessage"] = "Event not found.";
+            return RedirectToAction("ManageEvents");
+        }
+
+        // Validation: Check if quantity exceeds remaining tickets
+        int remainingTickets = evt.MaxTickets - evt.CreatedTicketsCount;
+        if (model.Quantity > remainingTickets)
+        {
+            TempData["ErrorMessage"] = $"Cannot create {model.Quantity} tickets. Only {remainingTickets} remaining.";
+            return RedirectToAction("CreateBulkTickets", new { eventId = model.EventId });
+        }
+
+        if (model.Quantity <= 0)
+        {
+            TempData["ErrorMessage"] = "Quantity must be greater than zero.";
+            return RedirectToAction("CreateBulkTickets", new { eventId = model.EventId });
+        }
+
+        var createdCodes = new List<string>();
+        var failedCount = 0;
+
+        // Use transaction for data integrity
+        using (var transaction = await _context.Database.BeginTransactionAsync())
+        {
+            try
+            {
+                for (int i = 0; i < model.Quantity; i++)
+                {
+                    string code = GenerateRandomCode(model.Issued);
+                    string imagePath = GenerateAndSaveImage(model.InvitationType, code);
+
+                    if (string.IsNullOrEmpty(imagePath))
+                    {
+                        failedCount++;
+                        _logger.LogWarning($"Failed to generate image for ticket {i + 1}/{model.Quantity}");
+                        continue;
+                    }
+
+                    var invitation = new Invitation
+                    {
+                        InviterName = model.InviterName,
+                        InvitationType = model.InvitationType,
+                        Issued = model.Issued,
+                        UniqCode = code,
+                        ImagePath = imagePath,
+                        CreatedAt = DateTime.Now,
+                        EventId = model.EventId
+                    };
+
+                    _context.Invitations.Add(invitation);
+                    createdCodes.Add(code);
+                }
+
+                // Update event ticket count
+                evt.CreatedTicketsCount += (model.Quantity - failedCount);
+                _context.Events.Update(evt);
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                TempData["SuccessMessage"] = $"Successfully created {model.Quantity - failedCount} tickets for event '{evt.EventName}'.";
+                if (failedCount > 0)
+                {
+                    TempData["WarningMessage"] = $"{failedCount} tickets failed to generate.";
+                }
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Error creating bulk tickets");
+                TempData["ErrorMessage"] = "An error occurred while creating tickets.";
+            }
+        }
+
+        return RedirectToAction("EventTickets", new { eventId = model.EventId });
+    }
+
+    public IActionResult EventTickets(int eventId)
+    {
+        try
+        {
+            var evt = _context.Events
+                .FirstOrDefault(e => e.Id == eventId);
+
+            if (evt == null)
+            {
+                TempData["ErrorMessage"] = "Event not found.";
+                return RedirectToAction("ManageEvents");
+            }
+
+            var tickets = _context.Invitations
+                .Where(i => i.EventId == eventId && !i.IsDeleted)
+                .OrderByDescending(i => i.CreatedAt)
+                .ToList();
+
+            ViewBag.Event = evt;
+            return View(tickets);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading event tickets");
+            TempData["ErrorMessage"] = "An error occurred while loading tickets.";
+            return RedirectToAction("ManageEvents");
+        }
+    }
+
+    [HttpPost]
+    public IActionResult ToggleEventStatus(int eventId)
+    {
+        try
+        {
+            var evt = _context.Events.Find(eventId);
+            if (evt == null)
+            {
+                TempData["ErrorMessage"] = "Event not found.";
+                return RedirectToAction("ManageEvents");
+            }
+
+            evt.IsActive = !evt.IsActive;
+            _context.Events.Update(evt);
+            _context.SaveChanges();
+
+            TempData["SuccessMessage"] = $"Event '{evt.EventName}' is now {(evt.IsActive ? "Active" : "Inactive")}.";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error toggling event status");
+            TempData["ErrorMessage"] = "An error occurred while updating event status.";
+        }
+
+        return RedirectToAction("ManageEvents");
+    }
+
+    [HttpPost]
+    public IActionResult ToggleImageStatus(int imageId)
+    {
+        try
+        {
+            var image = _context.InvitationsWithPoint.Find(imageId);
+            if (image == null)
+            {
+                TempData["AlertMessage"] = "Image not found.";
+                TempData["AlertType"] = "danger";
+                return RedirectToAction("ManageDesing");
+            }
+
+            image.IsActive = !image.IsActive;
+            _context.InvitationsWithPoint.Update(image);
+            _context.SaveChanges();
+
+            TempData["AlertMessage"] = $"Image '{image.Issued}' is now {(image.IsActive ? "Active" : "Inactive")}.";
+            TempData["AlertType"] = "success";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error toggling image status");
+            TempData["AlertMessage"] = "An error occurred while updating image status.";
+            TempData["AlertType"] = "danger";
+        }
+
+        return RedirectToAction("ManageDesing");
     }
 }

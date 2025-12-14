@@ -31,20 +31,24 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-// Initialize database
+// Initialize database with migrations
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     try
     {
         var context = services.GetRequiredService<ApplicationDbContext>();
-        context.Database.EnsureCreated(); // Creates database if it doesn't exist
-        // For production, use: await context.Database.MigrateAsync();
+        var logger = services.GetRequiredService<ILogger<Program>>();
+
+        // Apply any pending migrations
+        logger.LogInformation("Applying database migrations...");
+        context.Database.Migrate();
+        logger.LogInformation("Database migrations applied successfully");
     }
     catch (Exception ex)
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred creating the DB.");
+        logger.LogError(ex, "An error occurred while migrating the database.");
     }
 }
 

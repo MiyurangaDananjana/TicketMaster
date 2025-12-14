@@ -148,15 +148,19 @@
             const x = (e.clientX - rect.left) * scaleX;
             const y = (e.clientY - rect.top) * scaleY;
 
-            // Store coordinates
-            document.getElementById('CoordinateX').value = Math.round(x);
-            document.getElementById('CoordinateY').value = Math.round(y);
+            // Calculate coordinates relative to ORIGINAL image size (not scaled canvas)
+            const originalX = (x / canvas.width) * img.width;
+            const originalY = (y / canvas.height) * img.height;
+
+            // Store coordinates based on original image dimensions
+            document.getElementById('CoordinateX').value = Math.round(originalX);
+            document.getElementById('CoordinateY').value = Math.round(originalY);
 
             // Redraw image and add marker
             drawImageWithMarker(x, y);
 
-            // Update display
-            displayCoords.textContent = `X: ${Math.round(x)}, Y: ${Math.round(y)}`;
+            // Update display to show original image coordinates
+            displayCoords.textContent = `X: ${Math.round(originalX)}, Y: ${Math.round(originalY)} (on ${img.width}×${img.height}px image)`;
             coordinatesDisplay.style.display = 'block';
 
             // Enable save button

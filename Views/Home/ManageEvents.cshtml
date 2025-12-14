@@ -1,0 +1,305 @@
+@model IEnumerable<EventDTO>
+@{
+    ViewData["Title"] = "Manage Events";
+}
+
+<link rel="stylesheet" href="~/css/invitation-styles.css" />
+
+<div class="invitation-container">
+    <div class="header-section">
+        <h2 class="page-title">Manage Events</h2>
+        <p class="page-subtitle">Create and manage ticket events</p>
+        <a href="@Url.Action("CreateEvent")" class="btn btn-generate">
+            <i class="fas fa-plus"></i> Create New Event
+        </a>
+    </div>
+
+    <div class="invitation-form">
+        <!-- Stats Section -->
+        <div class="form-section">
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-calendar"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-number">@Model.Count()</h3>
+                        <p class="stat-label">Total Events</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-ticket-alt"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-number">@Model.Sum(e => e.CreatedTicketsCount)</h3>
+                        <p class="stat-label">Total Tickets Created</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-number">@Model.Count(e => e.CanCreateMore)</h3>
+                        <p class="stat-label">Active Events</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Events Table Section -->
+        <div class="form-section">
+            <h4 class="section-title">Event List</h4>
+            <div class="table-responsive">
+                <table class="invitation-table">
+                    <thead class="table-header">
+                        <tr>
+                            <th>Image</th>
+                            <th>Event Name</th>
+                            <th>Event Date</th>
+                            <th>Status</th>
+                            <th>Tickets</th>
+                            <th>Progress</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Any())
+                        {
+                            @foreach (var evt in Model)
+                            {
+                                <tr class="@(evt.IsActive == false ? "inactive-row" : "")">
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(evt.ImagePath))
+                                        {
+                                            <img src="@evt.ImagePath" alt="@evt.EventName" class="event-thumbnail" />
+                                        }
+                                        else
+                                        {
+                                            <div class="event-thumbnail-placeholder">
+                                                <i class="fas fa-calendar"></i>
+                                            </div>
+                                        }
+                                    </td>
+                                    <td>
+                                        <strong>@evt.EventName</strong>
+                                        @if (!string.IsNullOrEmpty(evt.Description))
+                                        {
+                                            <br /><small class="text-muted">@evt.Description</small>
+                                        }
+                                    </td>
+                                    <td>@evt.EventDate.ToString("MMM dd, yyyy")</td>
+                                    <td>
+                                        @if (evt.IsActive)
+                                        {
+                                            <span class="status-badge status-active">
+                                                <i class="fas fa-check-circle"></i> Active
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="status-badge status-inactive">
+                                                <i class="fas fa-times-circle"></i> Inactive
+                                            </span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <strong>@evt.CreatedTicketsCount</strong> / @evt.MaxTickets
+                                        <br />
+                                        <small class="text-muted">(@evt.RemainingTickets remaining)</small>
+                                    </td>
+                                    <td>
+                                        <div class="progress-bar-container">
+                                            <div class="progress-bar-fill" style="width: @(evt.ProgressPercentage)%"></div>
+                                            <span class="progress-text">@((int)evt.ProgressPercentage)%</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <form asp-action="ToggleEventStatus" method="post" style="display: inline;">
+                                                <input type="hidden" name="eventId" value="@evt.Id" />
+                                                <button type="submit" class="btn-small @(evt.IsActive ? "btn-warning" : "btn-success")"
+                                                        title="@(evt.IsActive ? "Deactivate" : "Activate")">
+                                                    <i class="fas @(evt.IsActive ? "fa-toggle-off" : "fa-toggle-on")"></i>
+                                                </button>
+                                            </form>
+                                            @if (evt.CanCreateMore && evt.IsActive)
+                                            {
+                                                <a href="@Url.Action("CreateBulkTickets", new { eventId = evt.Id })"
+                                                   class="btn-small btn-primary"
+                                                   title="Create Tickets">
+                                                    <i class="fas fa-plus-circle"></i>
+                                                </a>
+                                            }
+                                            <a href="@Url.Action("EventTickets", new { eventId = evt.Id })"
+                                               class="btn-small btn-info"
+                                               title="View Tickets">
+                                                <i class="fas fa-list"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center" style="padding: 2rem;">
+                                    <i class="fas fa-calendar-times" style="font-size: 3rem; color: #ccc;"></i>
+                                    <p style="margin-top: 1rem; color: #666;">No events found. Create your first event to get started!</p>
+                                    <a href="@Url.Action("CreateEvent")" class="btn btn-generate" style="margin-top: 1rem;">
+                                        <i class="fas fa-plus"></i> Create Event
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .progress-bar-container {
+        width: 100%;
+        height: 24px;
+        background-color: #f0f0f0;
+        border-radius: 12px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .progress-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #4CAF50, #8BC34A);
+        transition: width 0.3s ease;
+    }
+
+    .progress-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 12px;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .btn-small {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+    }
+
+    .btn-info {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        color: white;
+    }
+
+    .btn-info:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+
+    .btn-disabled {
+        background: #ccc;
+        color: #666;
+        cursor: not-allowed;
+    }
+
+    .text-muted {
+        color: #6c757d;
+    }
+
+    .text-center {
+        text-align: center;
+    }
+
+    .event-thumbnail {
+        width: 60px;
+        height: 60px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 2px solid #e0e0e0;
+    }
+
+    .event-thumbnail-placeholder {
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #f0f0f0, #e0e0e0);
+        border-radius: 8px;
+        color: #999;
+        font-size: 24px;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
+    .status-active {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+    }
+
+    .status-inactive {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: white;
+    }
+
+    .inactive-row {
+        opacity: 0.6;
+        background: #f9f9f9;
+    }
+
+    .btn-warning {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+    }
+
+    .btn-warning:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+    }
+
+    .btn-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    }
+</style>
