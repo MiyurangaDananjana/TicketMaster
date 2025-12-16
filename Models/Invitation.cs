@@ -15,6 +15,10 @@
         public bool IsDeleted { get; set; } = false;
         public DateTime? DeletedAt { get; set; }
 
+        // Verification fields
+        public bool IsVerified { get; set; } = false;
+        public DateTime? VerifiedAt { get; set; }
+
         // Foreign Key → Event.Id (nullable for backward compatibility)
         public int? EventId { get; set; }
 

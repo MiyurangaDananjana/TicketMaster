@@ -12,7 +12,7 @@
     <div class="header-section">
         <h2 class="page-title">Create Tickets: @evt.EventName</h2>
         <p class="page-subtitle">
-            Event Date: @evt.EventDate.ToString("MMMM dd, yyyy") |
+            Event Date: @evt.EventDate?.ToString("MMMM dd, yyyy") |
             <strong>Available: @remainingTickets / @evt.MaxTickets tickets</strong>
         </p>
     </div>

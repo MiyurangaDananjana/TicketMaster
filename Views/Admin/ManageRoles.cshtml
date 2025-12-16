@@ -1,0 +1,91 @@
+@model IEnumerable<TicketMaster.Models.Role>
+
+@{
+    ViewData["Title"] = "Manage Roles & Permissions";
+    var allPermissions = ViewBag.AllPermissions as List<TicketMaster.Models.Permission>;
+    var permissionsByCategory = allPermissions?.GroupBy(p => p.Category).OrderBy(g => g.Key).ToList();
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-user-tag me-2"></i>Manage Roles & Permissions</h2>
+        <a asp-action="ManageUsers" class="btn btn-outline-primary">
+            <i class="fas fa-users me-1"></i>Back to Users
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        @foreach (var role in Model)
+        {
+            <div class="col-md-12 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-shield-alt me-2"></i>@role.Name
+                            <small class="ms-2">- @role.Description</small>
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form asp-action="UpdateRolePermissions" method="post">
+                            <input type="hidden" name="roleId" value="@role.Id" />
+
+                            @if (permissionsByCategory != null && permissionsByCategory.Any())
+                            {
+                                <div class="row">
+                                    @foreach (var categoryGroup in permissionsByCategory)
+                                    {
+                                        <div class="col-md-6 mb-3">
+                                            <h6 class="text-primary border-bottom pb-2">
+                                                <i class="fas fa-folder me-1"></i>@categoryGroup.Key
+                                            </h6>
+                                            @foreach (var permission in categoryGroup)
+                                            {
+                                                var isChecked = role.RolePermissions.Any(rp => rp.PermissionId == permission.Id);
+                                                <div class="form-check ms-3">
+                                                    <input type="checkbox" name="permissionIds" value="@permission.Id"
+                                                           class="form-check-input" id="role_@(role.Id)_perm_@(permission.Id)"
+                                                           @(isChecked ? "checked" : "") />
+                                                    <label class="form-check-label" for="role_@(role.Id)_perm_@(permission.Id)">
+                                                        <strong>@permission.Name</strong>
+                                                        <br />
+                                                        <small class="text-muted">@permission.Description</small>
+                                                    </label>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
+
+                            <div class="text-end mt-3">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-save me-1"></i>Update Permissions for @role.Name
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

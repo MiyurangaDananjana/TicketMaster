@@ -4,7 +4,7 @@ namespace TicketMaster.Models.DTOs
     {
         public int Id { get; set; }
         public string EventName { get; set; }
-        public DateTime EventDate { get; set; }
+        public DateTime? EventDate { get; set; }
         public string? Description { get; set; }
         public int MaxTickets { get; set; }
         public int CreatedTicketsCount { get; set; }

@@ -9,8 +9,13 @@
     <Compile Remove="Migrations\20251213212957_20251214DM.Designer.cs" />
     <Compile Remove="Migrations\20251213214736_AddEventSupport.cs" />
     <Compile Remove="Migrations\20251213214736_AddEventSupport.Designer.cs" />
+    <Compile Remove="Migrations\20251214124036_add active option.cs" />
+    <Compile Remove="Migrations\20251214124036_add active option.Designer.cs" />
+    <Compile Remove="Migrations\20251214130013_add active options.cs" />
+    <Compile Remove="Migrations\20251214130013_add active options.Designer.cs" />
   </ItemGroup>
 	<ItemGroup>
+		<PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
 		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.8" />
 		<PackageReference Include="ClosedXML" Version="0.105.0" />
 		<PackageReference Include="itext7" Version="8.0.5" />

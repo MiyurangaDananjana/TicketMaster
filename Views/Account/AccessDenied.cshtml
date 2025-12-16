@@ -1,0 +1,47 @@
+@{
+    ViewData["Title"] = "Access Denied";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-lg border-danger">
+                <div class="card-header bg-danger text-white text-center">
+                    <h3><i class="fas fa-ban me-2"></i>Access Denied</h3>
+                </div>
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-exclamation-triangle text-warning" style="font-size: 80px;"></i>
+                    <h4 class="mt-4 mb-3">You don't have permission to access this resource</h4>
+                    <p class="text-muted mb-4">
+                        Your current role does not have the required permissions to view this page.
+                        <br />
+                        Please contact your administrator if you believe this is an error.
+                    </p>
+                    <div class="mt-4">
+                        <a asp-controller="Home" asp-action="Index" class="btn btn-primary me-2">
+                            <i class="fas fa-home me-1"></i>Go to Home
+                        </a>
+                        <a href="javascript:history.back()" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Go Back
+                        </a>
+                    </div>
+                </div>
+                <div class="card-footer text-center text-muted">
+                    <small>
+                        Logged in as: <strong>@User.Identity?.Name</strong>
+                        @if (User.Claims.Any(c => c.Type == System.Security.Claims.ClaimTypes.Role))
+                        {
+                            <br />
+                            <span>Role(s):
+                                @foreach (var role in User.Claims.Where(c => c.Type == System.Security.Claims.ClaimTypes.Role))
+                                {
+                                    <span class="badge bg-info me-1">@role.Value</span>
+                                }
+                            </span>
+                        }
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

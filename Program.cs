@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using TicketMaster.Authorization;
 using TicketMaster.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -26,8 +28,24 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     });
 
-// Add authorization if needed
-builder.Services.AddAuthorization();
+// Register authorization handler
+builder.Services.AddSingleton<IAuthorizationHandler, PermissionAuthorizationHandler>();
+
+// Add authorization with policies
+builder.Services.AddAuthorization(options =>
+{
+    // Define permission-based policies
+    options.AddPolicy("tickets.manage", policy => policy.Requirements.Add(new PermissionRequirement("tickets.manage")));
+    options.AddPolicy("tickets.view", policy => policy.Requirements.Add(new PermissionRequirement("tickets.view")));
+    options.AddPolicy("events.manage", policy => policy.Requirements.Add(new PermissionRequirement("events.manage")));
+    options.AddPolicy("events.view", policy => policy.Requirements.Add(new PermissionRequirement("events.view")));
+    options.AddPolicy("users.manage", policy => policy.Requirements.Add(new PermissionRequirement("users.manage")));
+    options.AddPolicy("designs.manage", policy => policy.Requirements.Add(new PermissionRequirement("designs.manage")));
+    options.AddPolicy("issuers.manage", policy => policy.Requirements.Add(new PermissionRequirement("issuers.manage")));
+    options.AddPolicy("reports.view", policy => policy.Requirements.Add(new PermissionRequirement("reports.view")));
+    options.AddPolicy("settings.manage", policy => policy.Requirements.Add(new PermissionRequirement("settings.manage")));
+    options.AddPolicy("invitations.verify", policy => policy.Requirements.Add(new PermissionRequirement("invitations.verify")));
+});
 
 var app = builder.Build();
 

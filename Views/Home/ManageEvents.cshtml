@@ -89,7 +89,7 @@
                                             <br /><small class="text-muted">@evt.Description</small>
                                         }
                                     </td>
-                                    <td>@evt.EventDate.ToString("MMM dd, yyyy")</td>
+                                    <td>@evt.EventDate?.ToString("MMM dd, yyyy")</td>
                                     <td>
                                         @if (evt.IsActive)
                                         {

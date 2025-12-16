@@ -12,7 +12,7 @@ namespace TicketMaster.Models
 
         [Required(ErrorMessage = "Event date is required")]
         [DataType(DataType.Date)]
-        public DateTime EventDate { get; set; }
+        public DateTime? EventDate { get; set; }
 
         [StringLength(500, ErrorMessage = "Description cannot exceed 500 characters")]
         public string? Description { get; set; }

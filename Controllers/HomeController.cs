@@ -3,6 +3,7 @@ using DocumentFormat.OpenXml.Bibliography;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Drawing;
+using TicketMaster.Authorization;
 using TicketMaster.Data;
 using TicketMaster.Models;
 using TicketMaster.Models.DTOs;
@@ -22,6 +23,7 @@ public class HomeController : Controller
     }
 
     [HttpGet]
+    [Authorize(Policy = "tickets.view")]
     public IActionResult Index()
     {
         if (TempData["ImageUrl"] != null)
@@ -76,6 +78,7 @@ public class HomeController : Controller
 
 
     [HttpPost]
+    [Authorize(Policy = "tickets.manage")]
     public IActionResult Index(InvitationDTO model)
     {
         if (model == null)
@@ -307,6 +310,7 @@ public class HomeController : Controller
         return newCode;
     }
 
+    [Authorize(Policy = "tickets.view")]
     public IActionResult IssuedList()
     {
         var invitations = _context.Invitations
@@ -317,6 +321,7 @@ public class HomeController : Controller
     }
 
     [HttpPost]
+    [Authorize(Policy = "tickets.manage")]
     public IActionResult DeleteInvitation(int id)
     {
         try
@@ -345,6 +350,7 @@ public class HomeController : Controller
         return RedirectToAction("IssuedList");
     }
 
+    [Authorize(Policy = "tickets.manage")]
     public IActionResult DeletedInvitations()
     {
         var deletedInvitations = _context.Invitations
@@ -410,12 +416,14 @@ public class HomeController : Controller
         return RedirectToAction("DeletedInvitations");
     }
 
+    [Authorize(Policy = "designs.manage")]
     public IActionResult SelectPoint()
     {
         return View();
     }
 
     [HttpPost]
+    [Authorize(Policy = "designs.manage")]
     public async Task<IActionResult> SelectPoint(IFormFile ImageUpload, int CoordinateX, int CoordinateY)
     {
 
@@ -466,6 +474,7 @@ public class HomeController : Controller
         return View();
     }
 
+    [Authorize(Policy = "designs.manage")]
     public IActionResult ManageDesing()
     {
         List<InvitationWithPoint> invitations = _context.InvitationsWithPoint.ToList();
@@ -543,6 +552,7 @@ public class HomeController : Controller
 
 
     [HttpGet]
+    [Authorize(Policy = "reports.view")]
     public IActionResult ExportExcel()
     {
         var invitations = _context.Invitations.ToList();
@@ -612,6 +622,7 @@ public class HomeController : Controller
         }
     }
 
+    [Authorize(Policy = "settings.manage")]
     public IActionResult SaveSettings()
     {
         var existingSettings = _context.ApplicationSettings.FirstOrDefault();
@@ -626,6 +637,7 @@ public class HomeController : Controller
     }
 
     [HttpPost]
+    [Authorize(Policy = "settings.manage")]
     public IActionResult SaveSettings(ApplicationSetting model)
     {
         if (ModelState.IsValid)
@@ -665,6 +677,7 @@ public class HomeController : Controller
 
     // Your existing controller methods - exactly as you have them working:
 
+    [Authorize(Policy = "issuers.manage")]
     public IActionResult CreateIssuer()
     {
         try
@@ -683,6 +696,7 @@ public class HomeController : Controller
     }
 
     [HttpPost]
+    [Authorize(Policy = "issuers.manage")]
     public IActionResult CreateIssuer(Issued model)
     {
         try
@@ -842,6 +856,7 @@ public class HomeController : Controller
 
     // ==================== EVENT MANAGEMENT ACTIONS ====================
 
+    [Authorize(Policy = "events.view")]
     public IActionResult ManageEvents()
     {
         try
@@ -872,12 +887,14 @@ public class HomeController : Controller
     }
 
     [HttpGet]
+    [Authorize(Policy = "events.manage")]
     public IActionResult CreateEvent()
     {
         return View();
     }
 
     [HttpPost]
+    [Authorize(Policy = "events.manage")]
     public IActionResult CreateEvent(Event model, IFormFile? eventImage)
     {
         if (ModelState.IsValid)
@@ -923,6 +940,7 @@ public class HomeController : Controller
     }
 
     [HttpGet]
+    [Authorize(Policy = "tickets.manage")]
     public IActionResult CreateBulkTickets(int eventId)
     {
         var evt = _context.Events.Find(eventId);
@@ -947,6 +965,7 @@ public class HomeController : Controller
     }
 
     [HttpPost]
+    [Authorize(Policy = "tickets.manage")]
     public async Task<IActionResult> CreateBulkTickets(BulkTicketCreateDTO model)
     {
         var evt = _context.Events.Find(model.EventId);
@@ -1086,6 +1105,7 @@ public class HomeController : Controller
     }
 
     [HttpPost]
+    [Authorize(Policy = "designs.manage")]
     public IActionResult ToggleImageStatus(int imageId)
     {
         try
@@ -1113,5 +1133,205 @@ public class HomeController : Controller
         }
 
         return RedirectToAction("ManageDesing");
+    }
+
+    // ==================== INVITATION VERIFICATION ====================
+
+    [HttpGet]
+    [Authorize(Policy = "invitations.verify")]
+    public IActionResult VerifyInvitation()
+    {
+        // Check if user has unverify permission
+        var isAdmin = User.FindFirst("IsAdmin")?.Value == "True";
+        var hasUnverifyPermission = isAdmin || User.Claims
+            .Any(c => c.Type == "Permission" && c.Value == "invitations.unverify");
+
+        ViewBag.HasUnverifyPermission = hasUnverifyPermission;
+        return View();
+    }
+
+    [HttpPost]
+    [Authorize(Policy = "invitations.verify")]
+    public IActionResult VerifyInvitation(string searchCode)
+    {
+        // Check if user has unverify permission
+        var isAdmin = User.FindFirst("IsAdmin")?.Value == "True";
+        var hasUnverifyPermission = isAdmin || User.Claims
+            .Any(c => c.Type == "Permission" && c.Value == "invitations.unverify");
+
+        ViewBag.HasUnverifyPermission = hasUnverifyPermission;
+
+        if (string.IsNullOrWhiteSpace(searchCode))
+        {
+            ViewBag.ErrorMessage = "Please enter an invitation code to search.";
+            return View();
+        }
+
+        try
+        {
+            var invitation = _context.Invitations
+                .Where(i => i.UniqCode == searchCode.Trim())
+                .Select(i => new
+                {
+                    Id = i.Id,
+                    UniqCode = i.UniqCode ?? string.Empty, // Handle null UniqCode
+                    InviterName = i.InviterName ?? "N/A", // Default to N/A if null
+                    InvitationType = i.InvitationType ?? "Unknown", // Default if null
+                    Issued = i.Issued, // Ensure this field exists
+                    ImagePath = i.ImagePath, // Can be null, handled in view
+                    CreatedAt = i.CreatedAt,
+                    IsDeleted = i.IsDeleted,
+                    IsVerified = i.IsVerified,
+                    VerifiedAt = i.VerifiedAt,
+                    EventName = i.Event != null ? (i.Event.EventName ?? "N/A") : "N/A",
+                    EventDate = i.Event != null ? i.Event.EventDate : (DateTime?)null, // Can be null if no event
+                    IssuedUserName = i.IssuedUser != null ? (i.IssuedUser.Name ?? "Unknown User") : "Unknown User"
+                })
+                .FirstOrDefault();
+
+            if (invitation != null)
+            {
+                ViewBag.Found = true;
+                ViewBag.Invitation = invitation;
+                ViewBag.SuccessMessage = $"Invitation found: {invitation.UniqCode}";
+            }
+            else
+            {
+                ViewBag.Found = false;
+                ViewBag.ErrorMessage = $"No invitation found with code: {searchCode}";
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error searching for invitation code: {Code}", searchCode);
+            ViewBag.ErrorMessage = "An error occurred while searching. Please try again.";
+        }
+
+        ViewBag.SearchCode = searchCode;
+        return View();
+    }
+
+    /// <summary>
+    /// Get autocomplete suggestions for invitation codes
+    /// </summary>
+    [HttpGet]
+    [Authorize(Policy = "invitations.verify")]
+    public IActionResult GetInvitationAutoComplete(string searchTerm)
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm) || searchTerm.Length < 2)
+        {
+            return Json(new { results = new List<object>() });
+        }
+
+        try
+        {
+            var searchTermUpper = searchTerm.Trim().ToUpper();
+
+            var results = _context.Invitations
+                .Where(i => !i.IsDeleted && i.UniqCode.ToUpper().Contains(searchTermUpper))
+                .OrderByDescending(i => i.CreatedAt)
+                .Take(10) // Limit to 10 results for performance
+                .Select(i => new
+                {
+                    uniqCode = i.UniqCode,
+                    inviterName = i.InviterName,
+                    createdAt = i.CreatedAt,
+                    isVerified = i.IsVerified,
+                    issued = i.Issued,
+                    eventName = i.Event != null ? i.Event.EventName : "N/A"
+                })
+                .ToList();
+
+            return Json(new { results });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in autocomplete search for term: {SearchTerm}", searchTerm);
+            return Json(new { results = new List<object>() });
+        }
+    }
+
+    [HttpPost]
+    [Authorize(Policy = "invitations.verify")]
+    public IActionResult MarkAsVerified([FromBody] VerificationRequest request)
+    {
+        try
+        {
+            if (request == null || request.InvitationId <= 0)
+            {
+                return Json(new { success = false, message = "Invalid request data." });
+            }
+
+            var invitation = _context.Invitations.FirstOrDefault(i => i.Id == request.InvitationId);
+            if (invitation == null)
+            {
+                return Json(new { success = false, message = "Invitation not found." });
+            }
+
+            // Check permission based on action
+            if (!request.IsVerified)
+            {
+                // User is trying to unverify - check for unverify permission
+                var isAdmin = User.FindFirst("IsAdmin")?.Value == "True";
+                var hasUnverifyPermission = User.Claims
+                    .Any(c => c.Type == "Permission" && c.Value == "invitations.unverify");
+
+                if (!isAdmin && !hasUnverifyPermission)
+                {
+                    _logger.LogWarning("User {Email} attempted to unverify invitation {Id} without permission",
+                        User.Identity?.Name, request.InvitationId);
+                    return Json(new { success = false, message = "You do not have permission to unverify invitations." });
+                }
+            }
+
+            invitation.IsVerified = request.IsVerified;
+            invitation.VerifiedAt =  DateTime.Now;
+            _context.SaveChanges();
+
+            _logger.LogInformation("Invitation {Id} ({UniqCode}) marked as {Status}",
+                request.InvitationId, invitation.UniqCode, request.IsVerified ? "verified" : "unverified");
+
+            return Json(new
+            {
+                success = true,
+                message = request.IsVerified ? "Invitation marked as verified!" : "Verification removed.",
+                verifiedAt = invitation.VerifiedAt?.ToString("yyyy-MM-dd HH:mm:ss")
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error marking invitation as verified");
+            return Json(new { success = false, message = "An error occurred while updating verification status." });
+        }
+    }
+
+    /// <summary>
+    /// Check if the current user has a specific permission
+    /// </summary>
+    [HttpGet]
+    [Authorize]
+    public IActionResult CheckPermission(string permission)
+    {
+        if (string.IsNullOrWhiteSpace(permission))
+        {
+            return Json(new { hasPermission = false });
+        }
+
+        var isAdmin = User.FindFirst("IsAdmin")?.Value == "True";
+        if (isAdmin)
+        {
+            return Json(new { hasPermission = true });
+        }
+
+        var hasPermission = User.Claims
+            .Any(c => c.Type == "Permission" && c.Value == permission);
+
+        return Json(new { hasPermission });
+    }
+
+    public class VerificationRequest
+    {
+        public int InvitationId { get; set; }
+        public bool IsVerified { get; set; }
     }
 }

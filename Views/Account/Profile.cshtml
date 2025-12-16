@@ -1,0 +1,264 @@
+@model TicketMaster.Models.DTOs.UserDTO
+
+@{
+    ViewData["Title"] = "My Profile";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Profile Header Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-user-circle me-2"></i>My Profile
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Profile Avatar Section -->
+                        <div class="col-md-3 text-center mb-3">
+                            <div class="profile-avatar-large mb-3">
+                                @(Model.FullName.Length > 0 ? Model.FullName.Substring(0, 1).ToUpper() : Model.Email.Substring(0, 1).ToUpper())
+                            </div>
+                            <h5 class="mb-1">@Model.FullName</h5>
+                            <p class="text-muted mb-2">@Model.Email</p>
+                            @if (Model.IsAdmin)
+                            {
+                                <span class="badge bg-danger">
+                                    <i class="fas fa-crown me-1"></i>Administrator
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-info">
+                                    <i class="fas fa-user me-1"></i>User
+                                </span>
+                            }
+                        </div>
+
+                        <!-- Profile Details Section -->
+                        <div class="col-md-9">
+                            <h5 class="border-bottom pb-2 mb-3">
+                                <i class="fas fa-info-circle me-2"></i>Account Information
+                            </h5>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="info-item">
+                                        <label class="text-muted mb-1">
+                                            <i class="fas fa-envelope me-1"></i>Email Address
+                                        </label>
+                                        <p class="fw-bold">@Model.Email</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="info-item">
+                                        <label class="text-muted mb-1">
+                                            <i class="fas fa-id-badge me-1"></i>User ID
+                                        </label>
+                                        <p class="fw-bold">#@Model.Id</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="info-item">
+                                        <label class="text-muted mb-1">
+                                            <i class="fas fa-user me-1"></i>First Name
+                                        </label>
+                                        <p class="fw-bold">@(string.IsNullOrEmpty(Model.FirstName) ? "Not Set" : Model.FirstName)</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="info-item">
+                                        <label class="text-muted mb-1">
+                                            <i class="fas fa-user me-1"></i>Last Name
+                                        </label>
+                                        <p class="fw-bold">@(string.IsNullOrEmpty(Model.LastName) ? "Not Set" : Model.LastName)</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="info-item">
+                                        <label class="text-muted mb-1">
+                                            <i class="fas fa-calendar-plus me-1"></i>Account Created
+                                        </label>
+                                        <p class="fw-bold">@Model.CreatedAt.ToString("MMMM dd, yyyy")</p>
+                                        <small class="text-muted">@Model.CreatedAt.ToString("hh:mm tt")</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="info-item">
+                                        <label class="text-muted mb-1">
+                                            <i class="fas fa-clock me-1"></i>Last Login
+                                        </label>
+                                        @if (Model.LastLoginAt.HasValue)
+                                        {
+                                            <p class="fw-bold">@Model.LastLoginAt.Value.ToString("MMMM dd, yyyy")</p>
+                                            <small class="text-muted">@Model.LastLoginAt.Value.ToString("hh:mm tt")</small>
+                                        }
+                                        else
+                                        {
+                                            <p class="fw-bold">Never</p>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="info-item">
+                                        <label class="text-muted mb-1">
+                                            <i class="fas fa-toggle-on me-1"></i>Account Status
+                                        </label>
+                                        <p>
+                                            @if (Model.IsActive)
+                                            {
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check-circle me-1"></i>Active
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger">
+                                                    <i class="fas fa-times-circle me-1"></i>Inactive
+                                                </span>
+                                            }
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Roles Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-tag me-2"></i>Assigned Roles
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Roles.Any())
+                    {
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach (var role in Model.Roles)
+                            {
+                                <span class="badge bg-success fs-6 px-3 py-2">
+                                    <i class="fas fa-shield-alt me-1"></i>@role
+                                </span>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-0">
+                            <i class="fas fa-info-circle me-1"></i>No roles assigned
+                        </p>
+                    }
+                </div>
+            </div>
+
+            <!-- Permissions Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-key me-2"></i>Permissions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Permissions.Any())
+                    {
+                        <div class="row">
+                            @foreach (var permission in Model.Permissions)
+                            {
+                                <div class="col-md-6 mb-2">
+                                    <div class="permission-item">
+                                        <i class="fas fa-check text-success me-2"></i>
+                                        <span>@permission</span>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-0">
+                            <i class="fas fa-info-circle me-1"></i>No permissions assigned
+                        </p>
+                    }
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="text-center mb-4">
+                <a asp-controller="Home" asp-action="Index" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Home
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .profile-avatar-large {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        font-weight: bold;
+        margin: 0 auto;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .info-item {
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        margin-bottom: 10px;
+    }
+
+    .info-item label {
+        font-size: 0.85rem;
+        display: block;
+    }
+
+    .info-item p {
+        margin-bottom: 0;
+    }
+
+    .permission-item {
+        padding: 8px 12px;
+        background: #f8f9fa;
+        border-radius: 6px;
+        border-left: 3px solid #17a2b8;
+    }
+
+    .card {
+        border-radius: 10px;
+        border: none;
+    }
+
+    .card-header {
+        border-radius: 10px 10px 0 0 !important;
+    }
+
+    .badge {
+        font-weight: 500;
+    }
+
+    .gap-2 {
+        gap: 0.5rem;
+    }
+</style>

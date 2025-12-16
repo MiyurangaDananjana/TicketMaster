@@ -1,4 +1,4 @@
-﻿﻿@using Microsoft.AspNetCore.Http
+@using Microsoft.AspNetCore.Http
 @inject IHttpContextAccessor HttpContextAccessor
 
 <!DOCTYPE html>
@@ -10,100 +10,301 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/TicketMaster.styles.css" asp-append-version="true" />
-    <!-- Import the CSS file -->
     <link href="~/css/invitation-styles.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/sidebar.css" rel="stylesheet" asp-append-version="true" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
-
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
-                    <i class="fas fa-ticket-alt me-2"></i> Ticket Master
-                </a>
+    @if (User.Identity.IsAuthenticated)
+    {
+        var isAdmin = User.FindFirst("IsAdmin")?.Value == "True";
+        var hasTicketsView = isAdmin || User.Claims.Any(c => c.Type == "Permission" && c.Value == "tickets.view");
+        var hasTicketsManage = isAdmin || User.Claims.Any(c => c.Type == "Permission" && c.Value == "tickets.manage");
+        var hasEventsView = isAdmin || User.Claims.Any(c => c.Type == "Permission" && c.Value == "events.view");
+        var hasEventsManage = isAdmin || User.Claims.Any(c => c.Type == "Permission" && c.Value == "events.manage");
+        var hasDesignsManage = isAdmin || User.Claims.Any(c => c.Type == "Permission" && c.Value == "designs.manage");
+        var hasIssuersManage = isAdmin || User.Claims.Any(c => c.Type == "Permission" && c.Value == "issuers.manage");
+        var hasSettingsManage = isAdmin || User.Claims.Any(c => c.Type == "Permission" && c.Value == "settings.manage");
+        var hasUsersManage = isAdmin || User.Claims.Any(c => c.Type == "Permission" && c.Value == "users.manage");
+        var hasReportsView = isAdmin || User.Claims.Any(c => c.Type == "Permission" && c.Value == "reports.view");
+        var hasInvitationsVerify = isAdmin || User.Claims.Any(c => c.Type == "Permission" && c.Value == "invitations.verify");
 
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+        var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+        var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
 
-                    @if (User.Identity.IsAuthenticated)
+        <div class="wrapper">
+            <!-- Sidebar -->
+            <nav id="sidebar">
+                <div class="sidebar-header">
+                    <h3><i class="fas fa-ticket-alt me-2"></i>Ticket Master</h3>
+                    <div class="logo-icon"><i class="fas fa-ticket-alt"></i></div>
+                </div>
+
+                <ul class="components">
+                    <!-- Verify Invitation - For Checker Role -->
+                    @if (hasInvitationsVerify)
                     {
-                        <ul class="navbar-nav flex-grow-1">
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">
-                                    <i class="fas fa-home me-1"></i> Home
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="IssuedList">
-                                    <i class="fas fa-list-alt me-1"></i> View Issued Items
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="ManageEvents">
-                                    <i class="fas fa-calendar-alt me-1"></i> Events
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="SelectPoint">
-                                    <i class="fas fa-map-marker-alt me-1"></i> Upload Design
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="ManageDesing">
-                                    <i class="fas fa-cogs me-1"></i> Manage Design
-                                </a>
-                            </li>
-
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="SaveSettings">
-                                    <i class="fa fa-cog" aria-hidden="true"></i> Settings
-                                </a>
-                            </li>
-
-
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="CreateIssuer">
-                                    <i class="fa fa-user" aria-hidden="true"></i> Create Issuer
-                                </a>
-                            </li>
-
-
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="DownloadSqliteBackup">
-                                    <i class="fas fa-database me-1"></i> Download Backup
-                                </a>
-                            </li>
-                        </ul>
-
-                        <form method="post" asp-controller="Account" asp-action="Logout" id="logoutForm" style="display:inline;">
-                            <button type="submit" style="background-color: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px;">
-                                Logout (@User.Identity.Name)
-                            </button>
-                        </form>
+                        <li class="@(currentAction == "VerifyInvitation" ? "active" : "")">
+                            <a asp-controller="Home" asp-action="VerifyInvitation">
+                                <i class="fas fa-search"></i>
+                                <span class="menu-text">Verify Invitation</span>
+                            </a>
+                        </li>
                     }
 
-                </div>
-            </div>
-        </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
+                    <!-- Tickets Section -->
+                    @if (hasTicketsView || hasTicketsManage)
+                    {
+                        <li class="@(currentAction == "Index" && currentController == "Home" ? "active" : "")">
+                            <a asp-controller="Home" asp-action="Index">
+                                <i class="fas fa-home"></i>
+                                <span class="menu-text">Home</span>
+                            </a>
+                        </li>
+                    }
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2025 - TicketMaster - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                    @if (hasTicketsView)
+                    {
+                        <li class="@(currentAction == "IssuedList" ? "active" : "")">
+                            <a asp-controller="Home" asp-action="IssuedList">
+                                <i class="fas fa-list-alt"></i>
+                                <span class="menu-text">View Issued Items</span>
+                            </a>
+                        </li>
+                    }
+
+                    @if (hasTicketsManage)
+                    {
+                        <li class="@(currentAction == "DeletedInvitations" ? "active" : "")">
+                            <a asp-controller="Home" asp-action="DeletedInvitations">
+                                <i class="fas fa-trash-restore"></i>
+                                <span class="menu-text">Deleted Items</span>
+                            </a>
+                        </li>
+                    }
+
+                    <!-- Events Section -->
+                    @if (hasEventsView)
+                    {
+                        <div class="sidebar-divider"></div>
+                        <li class="@(currentAction == "ManageEvents" ? "active" : "")">
+                            <a asp-controller="Home" asp-action="ManageEvents">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span class="menu-text">Events</span>
+                            </a>
+                        </li>
+                    }
+
+                    <!-- Designs Section -->
+                    @if (hasDesignsManage)
+                    {
+                        <div class="sidebar-divider"></div>
+                        <li class="@(currentAction == "SelectPoint" ? "active" : "")">
+                            <a asp-controller="Home" asp-action="SelectPoint">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <span class="menu-text">Upload Design</span>
+                            </a>
+                        </li>
+                        <li class="@(currentAction == "ManageDesing" ? "active" : "")">
+                            <a asp-controller="Home" asp-action="ManageDesing">
+                                <i class="fas fa-cogs"></i>
+                                <span class="menu-text">Manage Design</span>
+                            </a>
+                        </li>
+                    }
+
+                    <!-- Issuers Section -->
+                    @if (hasIssuersManage)
+                    {
+                        <div class="sidebar-divider"></div>
+                        <li class="@(currentAction == "CreateIssuer" ? "active" : "")">
+                            <a asp-controller="Home" asp-action="CreateIssuer">
+                                <i class="fas fa-user"></i>
+                                <span class="menu-text">Create Issuer</span>
+                            </a>
+                        </li>
+                    }
+
+                    <!-- Administration Section -->
+                    @if (hasUsersManage)
+                    {
+                        <div class="sidebar-divider"></div>
+                        <li>
+                            <a href="#adminSubmenu" data-bs-toggle="collapse" aria-expanded="false">
+                                <i class="fas fa-user-shield"></i>
+                                <span class="menu-text">Administration</span>
+                            </a>
+                            <ul class="collapse list-unstyled" id="adminSubmenu">
+                                <li class="@(currentAction == "Index" && currentController == "Admin" ? "active" : "")">
+                                    <a asp-controller="Admin" asp-action="Index">
+                                        <i class="fas fa-tachometer-alt"></i>
+                                        <span class="menu-text">Dashboard</span>
+                                    </a>
+                                </li>
+                                <li class="@(currentAction == "ManageUsers" ? "active" : "")">
+                                    <a asp-controller="Admin" asp-action="ManageUsers">
+                                        <i class="fas fa-users"></i>
+                                        <span class="menu-text">Manage Users</span>
+                                    </a>
+                                </li>
+                                <li class="@(currentAction == "ManageRoles" ? "active" : "")">
+                                    <a asp-controller="Admin" asp-action="ManageRoles">
+                                        <i class="fas fa-user-tag"></i>
+                                        <span class="menu-text">Manage Roles</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    }
+
+                    <!-- Settings Section -->
+                    @if (hasSettingsManage)
+                    {
+                        <div class="sidebar-divider"></div>
+                        <li class="@(currentAction == "SaveSettings" ? "active" : "")">
+                            <a asp-controller="Home" asp-action="SaveSettings">
+                                <i class="fas fa-cog"></i>
+                                <span class="menu-text">Settings</span>
+                            </a>
+                        </li>
+                    }
+
+                    <!-- Reports Section -->
+                    @if (isAdmin || hasReportsView)
+                    {
+                        <div class="sidebar-divider"></div>
+                        <li>
+                            <a asp-controller="Home" asp-action="ExportExcel">
+                                <i class="fas fa-file-excel"></i>
+                                <span class="menu-text">Export Excel</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a asp-controller="Home" asp-action="DownloadSqliteBackup">
+                                <i class="fas fa-database"></i>
+                                <span class="menu-text">Download Backup</span>
+                            </a>
+                        </li>
+                    }
+                </ul>
+
+                <!-- Profile Link -->
+                <div class="sidebar-divider"></div>
+                <ul class="components">
+                    <li class="@(currentAction == "Profile" && currentController == "Account" ? "active" : "")">
+                        <a asp-controller="Account" asp-action="Profile">
+                            <i class="fas fa-user-circle"></i>
+                            <span class="menu-text">My Profile</span>
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- User Info at Bottom -->
+                <div class="sidebar-user">
+                    <div class="user-info">
+                        <div class="user-avatar">
+                            @(User.Identity?.Name?.Substring(0, 1).ToUpper() ?? "U")
+                        </div>
+                        <div class="user-name">
+                            @User.Identity?.Name
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Page Content -->
+            <div id="content">
+                <!-- Top Navbar -->
+                <nav class="top-navbar">
+                    <button type="button" id="sidebarCollapse" class="toggle-sidebar">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <span class="navbar-brand"><i class="fas fa-ticket-alt me-2"></i>Ticket Master</span>
+                    <form method="post" asp-controller="Account" asp-action="Logout" style="margin: 0;">
+                        <button type="submit" class="btn btn-danger btn-sm">
+                            <i class="fas fa-sign-out-alt me-1"></i>Logout
+                        </button>
+                    </form>
+                </nav>
+
+                <!-- Main Content -->
+                <div class="container-fluid">
+                    <main role="main" class="pb-3">
+                        @RenderBody()
+                    </main>
+                </div>
+
+                <!-- Footer -->
+                <footer class="border-top footer text-muted mt-5">
+                    <div class="container">
+                        &copy; 2025 - TicketMaster - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                    </div>
+                </footer>
+            </div>
         </div>
-    </footer>
+
+        <!-- Mobile Overlay -->
+        <div class="sidebar-overlay"></div>
+    }
+    else
+    {
+        <!-- Login Page Layout (No Sidebar) -->
+        <div class="container">
+            <main role="main" class="pb-3">
+                @RenderBody()
+            </main>
+        </div>
+    }
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+
+    @if (User.Identity.IsAuthenticated)
+    {
+        <script>
+            $(document).ready(function () {
+                // Toggle sidebar
+                $('#sidebarCollapse').on('click', function () {
+                    $('#sidebar').toggleClass('collapsed');
+                    $('#content').toggleClass('expanded');
+
+                    // Save state to localStorage
+                    if ($('#sidebar').hasClass('collapsed')) {
+                        localStorage.setItem('sidebarCollapsed', 'true');
+                    } else {
+                        localStorage.setItem('sidebarCollapsed', 'false');
+                    }
+                });
+
+                // Restore sidebar state from localStorage
+                if (localStorage.getItem('sidebarCollapsed') === 'true') {
+                    $('#sidebar').addClass('collapsed');
+                    $('#content').addClass('expanded');
+                }
+
+                // Mobile: Toggle sidebar
+                $('#sidebarCollapse').on('click', function () {
+                    if ($(window).width() <= 768) {
+                        $('#sidebar').toggleClass('active');
+                        $('.sidebar-overlay').toggleClass('active');
+                    }
+                });
+
+                // Mobile: Close sidebar when clicking overlay
+                $('.sidebar-overlay').on('click', function () {
+                    $('#sidebar').removeClass('active');
+                    $(this).removeClass('active');
+                });
+
+                // Auto-expand submenu if child is active
+                $('.collapse li.active').each(function() {
+                    $(this).closest('.collapse').addClass('show');
+                });
+            });
+        </script>
+    }
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

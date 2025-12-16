@@ -1,0 +1,325 @@
+@model dynamic
+
+@{
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard</h2>
+            <p class="text-muted">Welcome to the TicketMaster administration panel</p>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <!-- Users Card -->
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted text-uppercase mb-2">Total Users</h6>
+                            <h2 class="mb-0">@Model.TotalUsers</h2>
+                            <small class="text-success">
+                                <i class="fas fa-check-circle"></i> @Model.ActiveUsers Active
+                            </small>
+                        </div>
+                        <div class="text-primary">
+                            <i class="fas fa-users fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0 pt-0">
+                    <a asp-action="ManageUsers" class="btn btn-sm btn-outline-primary w-100">
+                        <i class="fas fa-cog me-1"></i>Manage Users
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Events Card -->
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted text-uppercase mb-2">Total Events</h6>
+                            <h2 class="mb-0">@Model.TotalEvents</h2>
+                            <small class="text-info">
+                                <i class="fas fa-calendar-check"></i> @Model.ActiveEvents Upcoming
+                            </small>
+                        </div>
+                        <div class="text-info">
+                            <i class="fas fa-calendar-alt fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0 pt-0">
+                    <a asp-controller="Home" asp-action="ManageEvents" class="btn btn-sm btn-outline-info w-100">
+                        <i class="fas fa-list me-1"></i>View Events
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Invitations Card -->
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted text-uppercase mb-2">Invitations</h6>
+                            <h2 class="mb-0">@Model.TotalInvitations</h2>
+                            <small class="text-success">
+                                <i class="fas fa-check"></i> @Model.VerifiedInvitations Verified
+                            </small>
+                        </div>
+                        <div class="text-success">
+                            <i class="fas fa-ticket-alt fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0 pt-0">
+                    <a asp-controller="Home" asp-action="Index" class="btn btn-sm btn-outline-success w-100">
+                        <i class="fas fa-search me-1"></i>Search Invitations
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Roles & Permissions Card -->
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted text-uppercase mb-2">Roles</h6>
+                            <h2 class="mb-0">@Model.TotalRoles</h2>
+                            <small class="text-warning">
+                                <i class="fas fa-shield-alt"></i> @Model.TotalPermissions Permissions
+                            </small>
+                        </div>
+                        <div class="text-warning">
+                            <i class="fas fa-user-shield fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0 pt-0">
+                    <a asp-action="ManageRoles" class="btn btn-sm btn-outline-warning w-100">
+                        <i class="fas fa-cog me-1"></i>Manage Roles
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Quick Actions -->
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0"><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <a asp-action="CreateUser" class="text-decoration-none">
+                                <div class="p-3 border rounded hover-shadow text-center">
+                                    <i class="fas fa-user-plus fa-2x text-primary mb-2"></i>
+                                    <h6 class="mb-0">Create User</h6>
+                                    <small class="text-muted">Add new user account</small>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a asp-controller="Home" asp-action="CreateEvent" class="text-decoration-none">
+                                <div class="p-3 border rounded hover-shadow text-center">
+                                    <i class="fas fa-calendar-plus fa-2x text-info mb-2"></i>
+                                    <h6 class="mb-0">Create Event</h6>
+                                    <small class="text-muted">Add new event</small>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a asp-controller="Home" asp-action="CreateBulkTickets" class="text-decoration-none">
+                                <div class="p-3 border rounded hover-shadow text-center">
+                                    <i class="fas fa-ticket-alt fa-2x text-success mb-2"></i>
+                                    <h6 class="mb-0">Create Tickets</h6>
+                                    <small class="text-muted">Generate invitations</small>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a asp-action="ManageUsers" class="text-decoration-none">
+                                <div class="p-3 border rounded hover-shadow text-center">
+                                    <i class="fas fa-users-cog fa-2x text-primary mb-2"></i>
+                                    <h6 class="mb-0">Manage Users</h6>
+                                    <small class="text-muted">View and edit users</small>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a asp-action="ManageRoles" class="text-decoration-none">
+                                <div class="p-3 border rounded hover-shadow text-center">
+                                    <i class="fas fa-user-shield fa-2x text-warning mb-2"></i>
+                                    <h6 class="mb-0">Manage Roles</h6>
+                                    <small class="text-muted">Configure permissions</small>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a asp-controller="Home" asp-action="VerifyInvitation" class="text-decoration-none">
+                                <div class="p-3 border rounded hover-shadow text-center">
+                                    <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                                    <h6 class="mb-0">Verify Ticket</h6>
+                                    <small class="text-muted">Check invitation code</small>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Users -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0"><i class="fas fa-user-clock me-2"></i>Recent Users</h5>
+                </div>
+                <div class="card-body p-0">
+                    @if (Model.RecentUsers != null && Model.RecentUsers.Count > 0)
+                    {
+                        <div class="list-group list-group-flush">
+                            @foreach (var user in Model.RecentUsers)
+                            {
+                                <div class="list-group-item">
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-circle bg-primary text-white me-3">
+                                            @user.FirstName.Substring(0, 1)@user.LastName.Substring(0, 1)
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-0">@user.FirstName @user.LastName</h6>
+                                            <small class="text-muted">@user.Email</small>
+                                        </div>
+                                    </div>
+                                    <small class="text-muted d-block mt-1">
+                                        <i class="far fa-clock"></i> @user.CreatedAt.ToString("MMM dd, yyyy")
+                                    </small>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="p-3 text-center text-muted">
+                            <i class="fas fa-inbox fa-2x mb-2"></i>
+                            <p class="mb-0">No recent users</p>
+                        </div>
+                    }
+                </div>
+                <div class="card-footer bg-white border-0 text-center">
+                    <a asp-action="ManageUsers" class="btn btn-sm btn-link">View All Users <i class="fas fa-arrow-right"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Status -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>System Overview</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3 border-end">
+                            <div class="mb-2">
+                                <i class="fas fa-users text-primary fa-2x"></i>
+                            </div>
+                            <h4 class="mb-0">@Model.TotalUsers</h4>
+                            <small class="text-muted">Total Users</small>
+                            <div class="mt-2">
+                                <span class="badge bg-success">@Model.ActiveUsers Active</span>
+                                <span class="badge bg-secondary">@Model.InactiveUsers Inactive</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 border-end">
+                            <div class="mb-2">
+                                <i class="fas fa-calendar text-info fa-2x"></i>
+                            </div>
+                            <h4 class="mb-0">@Model.TotalEvents</h4>
+                            <small class="text-muted">Total Events</small>
+                            <div class="mt-2">
+                                <span class="badge bg-info">@Model.ActiveEvents Upcoming</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 border-end">
+                            <div class="mb-2">
+                                <i class="fas fa-ticket-alt text-success fa-2x"></i>
+                            </div>
+                            <h4 class="mb-0">@Model.TotalInvitations</h4>
+                            <small class="text-muted">Total Invitations</small>
+                            <div class="mt-2">
+                                <span class="badge bg-success">@Model.VerifiedInvitations Verified</span>
+                                <span class="badge bg-warning text-dark">@Model.UnverifiedInvitations Pending</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-2">
+                                <i class="fas fa-shield-alt text-warning fa-2x"></i>
+                            </div>
+                            <h4 class="mb-0">@Model.TotalRoles</h4>
+                            <small class="text-muted">System Roles</small>
+                            <div class="mt-2">
+                                <span class="badge bg-danger">@Model.AdminUsers Admins</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-shadow {
+        transition: all 0.3s ease;
+    }
+    .hover-shadow:hover {
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+        transform: translateY(-2px);
+    }
+    .opacity-50 {
+        opacity: 0.5;
+    }
+    .avatar-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 14px;
+    }
+</style>

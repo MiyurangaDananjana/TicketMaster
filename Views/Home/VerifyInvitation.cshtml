@@ -1,0 +1,599 @@
+@{
+    ViewData["Title"] = "Verify Invitation";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-search me-2"></i>Verify Invitation Code
+                    </h4>
+                </div>
+                <div class="card-body">
+                    @if (ViewBag.SuccessMessage != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="fas fa-check-circle me-2"></i>@ViewBag.SuccessMessage
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    @if (ViewBag.ErrorMessage != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="fas fa-exclamation-triangle me-2"></i>@ViewBag.ErrorMessage
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    <form method="post" asp-action="VerifyInvitation" id="verifyForm">
+                        <div class="mb-4">
+                            <label for="searchCode" class="form-label fw-bold">
+                                <i class="fas fa-barcode me-1"></i>Enter Invitation Code
+                            </label>
+                            <div class="position-relative">
+                                <div class="input-group input-group-lg">
+                                    <span class="input-group-text"><i class="fas fa-ticket-alt"></i></span>
+                                    <input type="text"
+                                           class="form-control"
+                                           id="searchCode"
+                                           name="searchCode"
+                                           placeholder="Enter invitation code (e.g., INV-001234)"
+                                           value="@ViewBag.SearchCode"
+                                           required
+                                           autofocus
+                                           autocomplete="off" />
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-search me-1"></i>Search
+                                    </button>
+                                </div>
+                                <!-- Autocomplete dropdown -->
+                                <ul class="list-group position-absolute w-100 mt-1" 
+                                    id="autocompleteList" 
+                                    style="display: none; max-height: 300px; overflow-y: auto; z-index: 1000;">
+                                </ul>
+                            </div>
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>Search for an invitation by its unique code. Start typing to see suggestions.
+                            </small>
+                        </div>
+                    </form>
+
+                    @if (ViewBag.Found == true)
+                    {
+                        var invitation = ViewBag.Invitation;
+                        <div class="card border-success mt-4" id="invitationDetailsCard">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-check-circle me-2"></i>Invitation Details
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <strong><i class="fas fa-barcode me-1"></i>Unique Code:</strong>
+                                        <br />
+                                        <span class="badge bg-primary fs-6">@invitation.UniqCode</span>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <strong><i class="fas fa-user me-1"></i>Inviter Name:</strong>
+                                        <br />
+                                        <span class="text-muted">@(string.IsNullOrEmpty(invitation.InviterName) ? "N/A" : invitation.InviterName)</span>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <strong><i class="fas fa-tag me-1"></i>Invitation Type:</strong>
+                                        <br />
+                                        <span class="text-muted">@invitation.InvitationType</span>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <strong><i class="fas fa-id-badge me-1"></i>Issued By:</strong>
+                                        <br />
+                                        <span class="text-muted">@invitation.Issued (@invitation.IssuedUserName)</span>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <strong><i class="fas fa-calendar me-1"></i>Created At:</strong>
+                                        <br />
+                                        <span class="text-muted">@invitation.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</span>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <strong><i class="fas fa-info-circle me-1"></i>Status:</strong>
+                                        <br />
+                                        @if (invitation.IsDeleted)
+                                        {
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-trash me-1"></i>Deleted
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check me-1"></i>Active
+                                            </span>
+                                        }
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <div class="card border-info">
+                                            <div class="card-body">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <strong><i class="fas fa-check-double me-1"></i>Verification Status:</strong>
+                                                        <span id="verificationStatus">
+                                                            @if (invitation.IsVerified)
+                                                            {
+                                                                <span class="badge bg-success ms-2">
+                                                                    <i class="fas fa-check-circle me-1"></i>Verified
+                                                                </span>
+                                                                @if (invitation.VerifiedAt != DateTime.MinValue)
+                                                                {
+                                                                    <br />
+                                                                    <small class="text-muted">Verified at: <span id="verifiedAtTime">@invitation.VerifiedAt.ToString("yyyy-MM-dd HH:mm:ss")</span></small>
+                                                                }
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="badge bg-warning text-dark ms-2">
+                                                                    <i class="fas fa-clock me-1"></i>Not Verified
+                                                                </span>
+                                                            }
+                                                        </span>
+                                                    </div>
+                                                    <div>
+                                                        @{
+                                                            var hasUnverifyPermission = ViewBag.HasUnverifyPermission ?? false;
+                                                            var isVerified = invitation.IsVerified;
+                                                            var isDisabled = isVerified && !hasUnverifyPermission;
+                                                        }
+                                                        <div class="form-check form-switch">
+                                                            <input class="form-check-input"
+                                                                   type="checkbox"
+                                                                   id="verifyCheckbox"
+                                                                   @(invitation.IsVerified ? "checked" : "")
+                                                                   @(isDisabled ? "disabled" : "")
+                                                                   data-invitation-id="@invitation.Id"
+                                                                   data-has-unverify-permission="@hasUnverifyPermission.ToString().ToLower()"
+                                                                   style="width: 3em; height: 1.5em; cursor: @(isDisabled ? "not-allowed" : "pointer");">
+                                                            <label class="form-check-label ms-2" for="verifyCheckbox">
+                                                                <strong>Mark as Verified</strong>
+                                                                @if (isDisabled)
+                                                                {
+                                                                    <i class="fas fa-lock text-muted ms-1" title="You don't have permission to unverify"></i>
+                                                                }
+                                                            </label>
+                                                        </div>
+                                                        @if (isDisabled)
+                                                        {
+                                                            <small class="text-muted">
+                                                                <i class="fas fa-info-circle me-1"></i>You don't have permission to remove verification
+                                                            </small>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                @if (!string.IsNullOrEmpty(invitation.EventName) && invitation.EventName != "N/A")
+                                {
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <strong><i class="fas fa-calendar-alt me-1"></i>Event:</strong>
+                                            <br />
+                                            <span class="text-muted">@invitation.EventName</span>
+                                        </div>
+                                        @if (invitation.EventDate != null && invitation.EventDate != DateTime.MinValue)
+                                        {
+                                            <div class="col-md-6 mb-3">
+                                                <strong><i class="fas fa-clock me-1"></i>Event Date:</strong>
+                                                <br />
+                                                <span class="text-muted">@(((DateTime)invitation.EventDate).ToString("yyyy-MM-dd HH:mm"))</span>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+
+                                @if (!string.IsNullOrEmpty(invitation.ImagePath))
+                                {
+                                    <div class="row mt-3">
+                                        <div class="col-12">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <strong><i class="fas fa-image me-1"></i>Invitation Image:</strong>
+                                                <a href="@invitation.ImagePath" target="_blank" class="btn btn-primary btn-sm">
+                                                    <i class="fas fa-external-link-alt me-1"></i>Open Image in New Tab
+                                                </a>
+                                            </div>
+                                          
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                    else if (ViewBag.Found == false)
+                    {
+                        <div class="alert alert-warning mt-4" role="alert">
+                            <h5 class="alert-heading">
+                                <i class="fas fa-exclamation-triangle me-2"></i>Not Found
+                            </h5>
+                            <p class="mb-0">
+                                The invitation code <strong>"@ViewBag.SearchCode"</strong> does not exist in the system.
+                            </p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .input-group-lg .input-group-text {
+        font-size: 1.25rem;
+    }
+
+    .card {
+        border-radius: 10px;
+    }
+
+    .card-header {
+        border-radius: 10px 10px 0 0;
+    }
+
+    .form-check-input:checked {
+        background-color: #198754;
+        border-color: #198754;
+    }
+
+    /* Autocomplete styling */
+    #autocompleteList .list-group-item {
+        border: 1px solid #dee2e6;
+        cursor: pointer;
+        padding: 12px 15px;
+        font-size: 0.95rem;
+        transition: all 0.2s ease;
+    }
+
+    #autocompleteList .list-group-item:hover {
+        background-color: #f8f9fa;
+        border-left: 4px solid #0d6efd;
+        padding-left: 11px;
+    }
+
+    #autocompleteList .list-group-item:first-child {
+        border-top-left-radius: 0.375rem;
+        border-top-right-radius: 0.375rem;
+    }
+
+    #autocompleteList .list-group-item:last-child {
+        border-bottom-left-radius: 0.375rem;
+        border-bottom-right-radius: 0.375rem;
+    }
+
+    .autocomplete-code {
+        font-weight: 600;
+        color: #0d6efd;
+    }
+
+    .autocomplete-meta {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-top: 4px;
+    }
+
+    /* Smooth transitions for card animations */
+    #invitationDetailsCard {
+        transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+    }
+
+    /* Success message styling */
+    .alert {
+        animation: slideDown 0.3s ease-out;
+    }
+
+    @@keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const searchCodeInput = document.getElementById('searchCode');
+            const autocompleteList = document.getElementById('autocompleteList');
+            const verifyForm = document.getElementById('verifyForm');
+            let debounceTimer;
+
+            // Autocomplete functionality
+            searchCodeInput.addEventListener('input', function () {
+                const searchTerm = this.value.trim();
+
+                clearTimeout(debounceTimer);
+
+                if (searchTerm.length < 2) {
+                    autocompleteList.style.display = 'none';
+                    autocompleteList.innerHTML = '';
+                    return;
+                }
+
+                // Debounce the search
+                debounceTimer = setTimeout(() => {
+                    fetch(`@Url.Action("GetInvitationAutoComplete", "Home")?searchTerm=${encodeURIComponent(searchTerm)}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.results && data.results.length > 0) {
+                                autocompleteList.innerHTML = '';
+                                data.results.forEach(invitation => {
+                                    const li = document.createElement('li');
+                                    li.className = 'list-group-item';
+                                    li.innerHTML = `
+                                        <div class="autocomplete-code">${invitation.uniqCode}</div>
+                                        <div class="autocomplete-meta">
+                                            <i class="fas fa-user me-1"></i>${invitation.inviterName || 'N/A'} 
+                                            <span class="ms-2">
+                                                <i class="fas fa-calendar me-1"></i>${new Date(invitation.createdAt).toLocaleDateString()}
+                                            </span>
+                                        </div>
+                                    `;
+                                    li.addEventListener('click', function () {
+                                        searchCodeInput.value = invitation.uniqCode;
+                                        autocompleteList.style.display = 'none';
+                                        verifyForm.submit();
+                                    });
+                                    autocompleteList.appendChild(li);
+                                });
+                                autocompleteList.style.display = 'block';
+                            } else {
+                                autocompleteList.innerHTML = '<li class="list-group-item text-muted"><i class="fas fa-search me-2"></i>No invitations found</li>';
+                                autocompleteList.style.display = 'block';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error fetching autocomplete data:', error);
+                            autocompleteList.style.display = 'none';
+                        });
+                }, 300); // 300ms debounce
+            });
+
+            // Close autocomplete when clicking outside
+            document.addEventListener('click', function (e) {
+                if (!e.target.closest('.position-relative')) {
+                    autocompleteList.style.display = 'none';
+                }
+            });
+
+            // Focus on input to show autocomplete again
+            searchCodeInput.addEventListener('focus', function () {
+                if (this.value.trim().length >= 2 && autocompleteList.children.length > 0) {
+                    autocompleteList.style.display = 'block';
+                }
+            });
+
+            // Keyboard navigation for autocomplete
+            searchCodeInput.addEventListener('keydown', function (e) {
+                const items = autocompleteList.querySelectorAll('.list-group-item');
+                if (items.length === 0) return;
+
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    const current = autocompleteList.querySelector('.list-group-item.active');
+                    const next = current ? current.nextElementSibling : items[0];
+                    if (next) {
+                        document.querySelectorAll('.list-group-item.active').forEach(el => el.classList.remove('active'));
+                        next.classList.add('active');
+                        next.scrollIntoView({ block: 'nearest' });
+                    }
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    const current = autocompleteList.querySelector('.list-group-item.active');
+                    const prev = current ? current.previousElementSibling : items[items.length - 1];
+                    if (prev) {
+                        document.querySelectorAll('.list-group-item.active').forEach(el => el.classList.remove('active'));
+                        prev.classList.add('active');
+                        prev.scrollIntoView({ block: 'nearest' });
+                    }
+                } else if (e.key === 'Enter') {
+                    const current = autocompleteList.querySelector('.list-group-item.active');
+                    if (current) {
+                        e.preventDefault();
+                        current.click();
+                    }
+                }
+            });
+
+            // Add active styling for arrow key navigation
+            const style = document.createElement('style');
+            style.textContent = `
+                #autocompleteList .list-group-item.active {
+                    background-color: #e7f1ff;
+                    border-left: 4px solid #0d6efd;
+                    padding-left: 11px;
+                }
+            `;
+            document.head.appendChild(style);
+
+            // Verification checkbox functionality
+            const verifyCheckbox = document.getElementById('verifyCheckbox');
+
+            if (verifyCheckbox) {
+                // Get permission from data attribute
+                const hasUnverifyPermission = verifyCheckbox.getAttribute('data-has-unverify-permission') === 'true';
+
+                verifyCheckbox.addEventListener('change', function () {
+                    // If checkbox is disabled, don't allow changes
+                    if (this.disabled) {
+                        return;
+                    }
+
+                    const invitationId = parseInt(this.getAttribute('data-invitation-id'));
+                    const isVerified = this.checked;
+
+                    // Disable checkbox while processing
+                    this.disabled = true;
+
+                    fetch('@Url.Action("MarkAsVerified", "Home")', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            invitationId: invitationId,
+                            isVerified: isVerified
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Update the verification status display
+                            const statusSpan = document.getElementById('verificationStatus');
+                            const checkboxContainer = verifyCheckbox.parentElement.parentElement;
+
+                            if (isVerified) {
+                                statusSpan.innerHTML = `
+                                    <span class="badge bg-success ms-2">
+                                        <i class="fas fa-check-circle me-1"></i>Verified
+                                    </span>
+                                    <br />
+                                    <small class="text-muted">Verified at: <span id="verifiedAtTime">${data.verifiedAt}</span></small>
+                                `;
+
+                                // If user doesn't have unverify permission, disable the checkbox and show lock icon
+                                if (!hasUnverifyPermission) {
+                                    verifyCheckbox.disabled = true;
+                                    verifyCheckbox.style.cursor = 'not-allowed';
+
+                                    // Add lock icon and message if not already present
+                                    const label = verifyCheckbox.nextElementSibling;
+                                    if (!label.querySelector('.fa-lock')) {
+                                        label.innerHTML = '<strong>Mark as Verified</strong> <i class="fas fa-lock text-muted ms-1" title="You don\'t have permission to unverify"></i>';
+                                    }
+                                    if (!checkboxContainer.querySelector('small.text-muted')) {
+                                        checkboxContainer.insertAdjacentHTML('beforeend', '<small class="text-muted"><i class="fas fa-info-circle me-1"></i>You don\'t have permission to remove verification</small>');
+                                    }
+                                }
+
+                                // Close/hide the invitation details card after successful verification (for all users)
+                                setTimeout(() => {
+                                    const detailsCard = document.getElementById('invitationDetailsCard');
+                                    if (detailsCard) {
+                                        // Add fade-out animation
+                                        detailsCard.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
+                                        detailsCard.style.opacity = '0';
+                                        detailsCard.style.transform = 'translateY(-20px)';
+
+                                        // Remove from DOM after animation
+                                        setTimeout(() => {
+                                            detailsCard.remove();
+                                            // Show a persistent success message
+                                            const successMsg = hasUnverifyPermission
+                                                ? 'Invitation verified successfully! Search again to modify the verification status.'
+                                                : 'Invitation verified successfully! The invitation has been locked and can only be modified by administrators.';
+                                            showPersistentAlert('success', successMsg);
+
+                                            // Clear the search box to encourage new search
+                                            const searchInput = document.getElementById('searchCode');
+                                            if (searchInput) {
+                                                searchInput.value = '';
+                                                searchInput.focus();
+                                            }
+                                        }, 500);
+                                    }
+                                }, 0); // Wait 2 seconds to let user see the success message
+                            } else {
+                                statusSpan.innerHTML = `
+                                    <span class="badge bg-warning text-dark ms-2">
+                                        <i class="fas fa-clock me-1"></i>Not Verified
+                                    </span>
+                                `;
+
+                                // Re-enable checkbox when not verified
+                                verifyCheckbox.disabled = false;
+                                verifyCheckbox.style.cursor = 'pointer';
+
+                                // Remove lock icon and message
+                                const label = verifyCheckbox.nextElementSibling;
+                                label.innerHTML = '<strong>Mark as Verified</strong>';
+                                const smallMessage = checkboxContainer.querySelector('small.text-muted');
+                                if (smallMessage) {
+                                    smallMessage.remove();
+                                }
+                            }
+
+                            // Show success message
+                            showAlert('success', data.message);
+                        } else {
+                            // Revert checkbox state on error
+                            verifyCheckbox.checked = !isVerified;
+                            showAlert('danger', data.message || 'Failed to update verification status.');
+                            // Re-enable checkbox if it was enabled before
+                            if (!isVerified || hasUnverifyPermission) {
+                                verifyCheckbox.disabled = false;
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        // Revert checkbox state on error
+                        verifyCheckbox.checked = !isVerified;
+                        showAlert('danger', 'An error occurred while updating verification status.');
+                        // Re-enable checkbox if it was enabled before
+                        if (!isVerified || hasUnverifyPermission) {
+                            verifyCheckbox.disabled = false;
+                        }
+                    });
+                });
+            }
+
+            function showAlert(type, message) {
+                const alertHtml = `
+                    <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `;
+                const cardBody = document.querySelector('.card-body');
+                cardBody.insertAdjacentHTML('afterbegin', alertHtml);
+
+                // Auto-dismiss after 3 seconds
+                setTimeout(() => {
+                    const alert = cardBody.querySelector('.alert');
+                    if (alert) {
+                        alert.remove();
+                    }
+                }, 3000);
+            }
+
+            function showPersistentAlert(type, message) {
+                // Remove any existing alerts first
+                const existingAlerts = document.querySelectorAll('.alert');
+                existingAlerts.forEach(alert => alert.remove());
+
+                const alertHtml = `
+                    <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `;
+                const cardBody = document.querySelector('.card-body');
+                cardBody.insertAdjacentHTML('afterbegin', alertHtml);
+            }
+        });
+    </script>
+}

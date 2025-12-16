@@ -10,7 +10,7 @@
     <div class="header-section">
         <h2 class="page-title">@evt.EventName - Tickets</h2>
         <p class="page-subtitle">
-            Event Date: @evt.EventDate.ToString("MMMM dd, yyyy") |
+            Event Date: @evt.EventDate?.ToString("MMMM dd, yyyy") |
             <strong>@Model.Count() tickets created</strong> out of @evt.MaxTickets maximum
         </p>
     </div>
