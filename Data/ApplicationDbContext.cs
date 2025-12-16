@@ -7,33 +7,36 @@ namespace TicketMaster.Data
     public class ApplicationDbContext : DbContext
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-      : base(options)
+            : base(options)
         {
         }
 
         public DbSet<Invitation> Invitations { get; set; }
-
         public DbSet<InvitationWithPoint> InvitationsWithPoint { get; set; }
-
         public DbSet<User> Users { get; set; }
-
         public DbSet<ApplicationSetting> ApplicationSettings { get; set; }
-
         public DbSet<Issued> Issueds { get; set; }
-
         public DbSet<Event> Events { get; set; }
-
         public DbSet<Role> Roles { get; set; }
-
         public DbSet<Permission> Permissions { get; set; }
-
         public DbSet<UserRole> UserRoles { get; set; }
-
         public DbSet<RolePermission> RolePermissions { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // PostgreSQL: Use lowercase table names (convention)
+            modelBuilder.Entity<Invitation>().ToTable("invitations");
+            modelBuilder.Entity<InvitationWithPoint>().ToTable("invitations_with_point");
+            modelBuilder.Entity<User>().ToTable("users");
+            modelBuilder.Entity<ApplicationSetting>().ToTable("application_settings");
+            modelBuilder.Entity<Issued>().ToTable("issueds");
+            modelBuilder.Entity<Event>().ToTable("events");
+            modelBuilder.Entity<Role>().ToTable("roles");
+            modelBuilder.Entity<Permission>().ToTable("permissions");
+            modelBuilder.Entity<UserRole>().ToTable("user_roles");
+            modelBuilder.Entity<RolePermission>().ToTable("role_permissions");
 
             // Issued PK
             modelBuilder.Entity<Issued>()
@@ -43,16 +46,16 @@ namespace TicketMaster.Data
             modelBuilder.Entity<Invitation>()
                 .HasOne(i => i.IssuedUser)
                 .WithMany(u => u.Invitations)
-                .HasForeignKey(i => i.Issued)            // FK in Invitation
-                .HasPrincipalKey(u => u.UserCode)        // PK in Issued
-                .OnDelete(DeleteBehavior.Cascade);       // Cascade delete
+                .HasForeignKey(i => i.Issued)
+                .HasPrincipalKey(u => u.UserCode)
+                .OnDelete(DeleteBehavior.Cascade);
 
             // Event → Invitation (one-to-many)
             modelBuilder.Entity<Invitation>()
                 .HasOne(i => i.Event)
                 .WithMany(e => e.Invitations)
                 .HasForeignKey(i => i.EventId)
-                .OnDelete(DeleteBehavior.SetNull);       // Don't cascade delete tickets when event deleted
+                .OnDelete(DeleteBehavior.SetNull);
 
             // User → UserRole (one-to-many)
             modelBuilder.Entity<UserRole>()
@@ -94,6 +97,13 @@ namespace TicketMaster.Data
             modelBuilder.Entity<User>()
                 .HasIndex(u => u.Email)
                 .IsUnique();
+
+            // PostgreSQL-specific configurations for decimal/numeric columns
+            // Add these based on your entity models if you have decimal properties
+            // Example:
+            // modelBuilder.Entity<Invitation>()
+            //     .Property(i => i.Price)
+            //     .HasColumnType("decimal(18,2)");
 
             // Seed default admin user, roles, and permissions
             SeedData(modelBuilder);
@@ -171,8 +181,5 @@ namespace TicketMaster.Data
                 new RolePermission { Id = 18, RoleId = 4, PermissionId = 10, AssignedAt = seedDate }  // invitations.verify
             );
         }
-
-
     }
-
 }

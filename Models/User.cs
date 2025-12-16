@@ -14,6 +14,7 @@
 
         // Navigation property
         public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
+        public ICollection<Issued> Issueds { get; set; } = new List<Issued>();
 
         // Computed property
         public string FullName => $"{FirstName} {LastName}".Trim();
