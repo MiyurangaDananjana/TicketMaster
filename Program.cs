@@ -4,16 +4,42 @@ using Microsoft.EntityFrameworkCore;
 using TicketMaster.Authorization;
 using TicketMaster.Data;
 
+// Enable legacy timestamp behavior for Npgsql 8.0+
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var builder = WebApplication.CreateBuilder(args);
+
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxConcurrentConnections = 100;
+    options.Limits.MaxConcurrentUpgradedConnections = 100;
+    options.Limits.MaxRequestBodySize = 10 * 1024 * 1024; // 10MB
+    options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(2);
+});
+
+// Configure DbContext with connection pooling
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+{
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        npgsqlOptions =>
+        {
+            npgsqlOptions.CommandTimeout(30);
+            npgsqlOptions.EnableRetryOnFailure(3);
+        }
+    );
+}, ServiceLifetime.Scoped);
+
+// Enable response compression
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+});
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
 builder.Services.AddHttpContextAccessor();
-
-// SQLite connection
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite("Data Source=invitations.db"));
 
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

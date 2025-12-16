@@ -1,0 +1,20 @@
+PostgreSQL Configuration Instructions
+======================================
+
+1. Find your pg_hba.conf file location:
+   On Windows with PostgreSQL: C:\Program Files\PostgreSQL\16\data\pg_hba.conf
+   On Linux: /var/lib/postgresql/data/pg_hba.conf or /etc/postgresql/16/main/pg_hba.conf
+
+2. Add or ensure these lines exist in pg_hba.conf:
+
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+host    ticketmaster    postgres        127.0.0.1/32            md5
+host    ticketmaster    postgres        ::1/128                 md5
+
+3. Restart PostgreSQL:
+   Windows: net stop postgresql-x64-16 && net start postgresql-x64-16
+   Linux: sudo systemctl restart postgresql
+
+4. Verify PostgreSQL is listening on localhost:
+   netstat -an | findstr :5432    (Windows)
+   netstat -tulpn | grep :5432    (Linux)

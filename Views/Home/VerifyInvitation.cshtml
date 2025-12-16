@@ -220,17 +220,6 @@
                             </div>
                         </div>
                     }
-                    else if (ViewBag.Found == false)
-                    {
-                        <div class="alert alert-warning mt-4" role="alert">
-                            <h5 class="alert-heading">
-                                <i class="fas fa-exclamation-triangle me-2"></i>Not Found
-                            </h5>
-                            <p class="mb-0">
-                                The invitation code <strong>"@ViewBag.SearchCode"</strong> does not exist in the system.
-                            </p>
-                        </div>
-                    }
                 </div>
             </div>
         </div>
@@ -360,10 +349,7 @@
                                     autocompleteList.appendChild(li);
                                 });
                                 autocompleteList.style.display = 'block';
-                            } else {
-                                autocompleteList.innerHTML = '<li class="list-group-item text-muted"><i class="fas fa-search me-2"></i>No invitations found</li>';
-                                autocompleteList.style.display = 'block';
-                            }
+                            } 
                         })
                         .catch(error => {
                             console.error('Error fetching autocomplete data:', error);
