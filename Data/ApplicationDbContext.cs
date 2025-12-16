@@ -126,7 +126,8 @@ namespace TicketMaster.Data
                 new Permission { Id = 7, Name = "Manage Issuers", Code = "issuers.manage", Description = "Create and manage issuers", Category = "Issuers", CreatedAt = seedDate },
                 new Permission { Id = 8, Name = "View Reports", Code = "reports.view", Description = "View and export reports", Category = "Reports", CreatedAt = seedDate },
                 new Permission { Id = 9, Name = "Manage Settings", Code = "settings.manage", Description = "Manage application settings", Category = "Settings", CreatedAt = seedDate },
-                new Permission { Id = 10, Name = "Verify Invitations", Code = "invitations.verify", Description = "Search and verify invitation codes", Category = "Tickets", CreatedAt = seedDate }
+                new Permission { Id = 10, Name = "Verify Invitations", Code = "invitations.verify", Description = "Search and verify invitation codes", Category = "Tickets", CreatedAt = seedDate },
+                new Permission { Id = 11, Name = "Unverify Invitations", Code = "invitations.unverify", Description = "Unverify previously verified invitations", Category = "Tickets", CreatedAt = seedDate }
             };
             modelBuilder.Entity<Permission>().HasData(permissions);
 
@@ -163,22 +164,23 @@ namespace TicketMaster.Data
 
             // Assign permissions to Manager role
             modelBuilder.Entity<RolePermission>().HasData(
-                new RolePermission { Id = 11, RoleId = 2, PermissionId = 1, AssignedAt = seedDate }, // tickets.manage
-                new RolePermission { Id = 12, RoleId = 2, PermissionId = 3, AssignedAt = seedDate }, // events.manage
-                new RolePermission { Id = 13, RoleId = 2, PermissionId = 6, AssignedAt = seedDate }, // designs.manage
-                new RolePermission { Id = 14, RoleId = 2, PermissionId = 7, AssignedAt = seedDate }, // issuers.manage
-                new RolePermission { Id = 15, RoleId = 2, PermissionId = 8, AssignedAt = seedDate }  // reports.view
+                new RolePermission { Id = 12, RoleId = 2, PermissionId = 1, AssignedAt = seedDate }, // tickets.manage
+                new RolePermission { Id = 13, RoleId = 2, PermissionId = 3, AssignedAt = seedDate }, // events.manage
+                new RolePermission { Id = 14, RoleId = 2, PermissionId = 6, AssignedAt = seedDate }, // designs.manage
+                new RolePermission { Id = 15, RoleId = 2, PermissionId = 7, AssignedAt = seedDate }, // issuers.manage
+                new RolePermission { Id = 16, RoleId = 2, PermissionId = 8, AssignedAt = seedDate }  // reports.view
             );
 
             // Assign permissions to Operator role
             modelBuilder.Entity<RolePermission>().HasData(
-                new RolePermission { Id = 16, RoleId = 3, PermissionId = 2, AssignedAt = seedDate }, // tickets.view
-                new RolePermission { Id = 17, RoleId = 3, PermissionId = 4, AssignedAt = seedDate }  // events.view
+                new RolePermission { Id = 17, RoleId = 3, PermissionId = 2, AssignedAt = seedDate }, // tickets.view
+                new RolePermission { Id = 18, RoleId = 3, PermissionId = 4, AssignedAt = seedDate }  // events.view
             );
 
-            // Assign permissions to Checker role - only invitation verification
+            // Assign permissions to Checker role - invitation verification and unverification
             modelBuilder.Entity<RolePermission>().HasData(
-                new RolePermission { Id = 18, RoleId = 4, PermissionId = 10, AssignedAt = seedDate }  // invitations.verify
+                new RolePermission { Id = 19, RoleId = 4, PermissionId = 10, AssignedAt = seedDate }, // invitations.verify
+                new RolePermission { Id = 20, RoleId = 4, PermissionId = 11, AssignedAt = seedDate }  // invitations.unverify
             );
         }
     }
